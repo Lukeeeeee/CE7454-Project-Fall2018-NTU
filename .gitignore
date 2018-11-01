@@ -111,4 +111,5 @@ snapshots/
 log/*
 !log/**/*.py
 !log/model
+!data/README.md
 
