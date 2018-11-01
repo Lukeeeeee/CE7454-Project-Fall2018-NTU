@@ -15,13 +15,13 @@ model_config = {'train': ICNet, 'trainval': ICNet, 'train_bn': ICNet_BN, 'trainv
 def get_arguments():
     parser = argparse.ArgumentParser(description="Reproduced ICNet")
 
-    parser.add_argument("--model", type=str, default='',
+    parser.add_argument("--model", type=str, default='others',
                         help="Model to use.",
                         choices=['train', 'trainval', 'train_bn', 'trainval_bn', 'others'],
-                        required=True)
-    parser.add_argument("--dataset", type=str, default='',
-                        choices=['ade20k', 'cityscapes'],
-                        required=True)
+                        required=False)
+    parser.add_argument("--dataset", type=str, default='others',
+                        choices=['ade20k', 'cityscapes', 'others'],
+                        required=False)
     parser.add_argument("--filter-scale", type=int, default=1,
                         help="1 for using pruned model, while 2 for using non-pruned model.",
                         choices=[1, 2])
@@ -51,7 +51,9 @@ def main():
         mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes']+1)
     elif cfg.dataset == 'cityscapes':
         mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
-    
+    elif cfg.dataset == 'others':
+        mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
+
     net.create_session()
     net.restore(cfg.model_paths[args.model])
     
