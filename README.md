@@ -56,12 +56,12 @@ csCreateTrainIdLabelImgs
 This repo provide three phases with full documented, which means you can try train/evaluate/inference on your own.
 
 ### Inference on your own image<a name="inference"></a>
-[demo.ipynb](./demo.ipynb) show the easiest example to run semantic segmnetation on your own image. 
+[demo.ipynb](src/demo.ipynb) show the easiest example to run semantic segmnetation on your own image. 
 
 ![](./data/output/vis_im1.png)
 ![](./data/output/vis_im2.png)
 
-In the end of [demo.ipynb](./demo.ipynb), you can test the speed of ICNet.
+In the end of [demo.ipynb](src/demo.ipynb), you can test the speed of ICNet.
 
 Here are some results run on Titan Xp with high resolution images (1024x2048):  
 **~0.037(s) per images, which means we can get ~27 fps** (nearly same as described in paper).

@@ -107,3 +107,8 @@ dataset/*
 !dataset/*.py
 data/*
 snapshots/
+!data/__init__.py
+log/*
+!log/**/*.py
+!log/model
+

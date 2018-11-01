@@ -1,23 +1,29 @@
 import numpy as np
 import os
+from data import DATA_PATH
+from src import SRC_PATH
+from log.model import MODEL_PATH
+from log import LOG_PATH
 
 
 class Config(object):
     # Setting dataset directory
-    CITYSCAPES_DATA_DIR = './data/cityscapes_dataset/cityscape/'
-    ADE20K_DATA_DIR = './data/ADEChallengeData2016/'
 
-    Kaggle_DATA_DIR = '/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/data/Kaggle/'
+    CITYSCAPES_DATA_DIR = os.path.join(DATA_PATH, 'cityscapes_dataset', 'cityscape')
 
-    ADE20K_eval_list = os.path.join('./data/list/ade20k_val_list.txt')
-    CITYSCAPES_eval_list = os.path.join('./data/list/cityscapes_val_list.txt')
+    ADE20K_DATA_DIR = os.path.join(DATA_PATH, 'ADEChallengeData2016')
 
-    Kaggle_eval_list = os.path.join('valid.txt')
+    Kaggle_DATA_DIR = os.path.join(DATA_PATH)
 
-    ADE20K_train_list = os.path.join('./data/list/ade20k_train_list.txt')
-    CITYSCAPES_train_list = os.path.join('./data/list/cityscapes_train_list.txt')
+    ADE20K_eval_list = os.path.join(DATA_PATH, 'list', 'ade20k_val_list.txt')
+    CITYSCAPES_eval_list = os.path.join(DATA_PATH, 'list', 'cityscapes_val_list.txt')
 
-    Kaggle_train_list = os.path.join('train.txt')
+    Kaggle_eval_list = os.path.join(SRC_PATH, 'valid.txt')
+
+    ADE20K_train_list = os.path.join(DATA_PATH, 'list', 'ade20k_train_list.txt')
+    CITYSCAPES_train_list = os.path.join(DATA_PATH, 'list', 'cityscapes_train_list.txt')
+
+    Kaggle_train_list = os.path.join(SRC_PATH, 'train.txt')
 
     IMG_MEAN = np.array((103.939, 116.779, 123.68), dtype=np.float32)
 
@@ -39,11 +45,12 @@ class Config(object):
                         'train_list': CITYSCAPES_train_list,
                         'data_dir': CITYSCAPES_DATA_DIR}
 
-    model_paths = {'train': './model/cityscapes/icnet_cityscapes_train_30k.npy',
-                   'trainval': './model/cityscapes/icnet_cityscapes_trainval_90k.npy',
-                   'train_bn': './model/cityscapes/icnet_cityscapes_train_30k_bnnomerge.npy',
-                   'trainval_bn': './model/cityscapes/icnet_cityscapes_trainval_90k_bnnomerge.npy',
-                   'others': '/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/snapshots/model.ckpt-500'}
+    model_paths = {'train': os.path.join(MODEL_PATH, 'cityscapes', 'icnet_cityscapes_train_30k.npy'),
+                   'trainval': os.path.join(MODEL_PATH, 'cityscapes', 'icnet_cityscapes_trainval_90k.npy'),
+                   'train_bn': os.path.join(MODEL_PATH, 'cityscapes', 'icnet_cityscapes_train_30k_bnnomerge.npy'),
+                   'trainval_bn': os.path.join(MODEL_PATH, 'cityscapes', 'icnet_cityscapes_trainval_90k_bnnomerge.npy'),
+                   'others': os.path.join(LOG_PATH, 'model.ckpt-500')}
+    # assert os.path.isfile()
 
     ## If you want to train on your own dataset, try to set these parameters.
     others_param = {'name': 'Kaggle',
@@ -69,7 +76,7 @@ class Config(object):
     POWER = 0.9
     RANDOM_SEED = 1234
     WEIGHT_DECAY = 0.0001
-    SNAPSHOT_DIR = './snapshots/'
+    SNAPSHOT_DIR = LOG_PATH
     SAVE_NUM_IMAGES = 4
     SAVE_PRED_EVERY = 500
 

@@ -2,16 +2,12 @@
 This code is based on DrSleep's framework: https://github.com/DrSleep/tensorflow-deeplab-resnet 
 """
 import argparse
-import os
-import sys
 import time
 
 import tensorflow as tf
-import numpy as np
 
-from model import ICNet_BN
+from src.model import ICNet_BN
 from utils.config import Config
-from utils.visualize import decode_labels
 from utils.image_reader import ImageReader, prepare_label
 import os
 
