@@ -6,7 +6,7 @@ class Config(object):
     CITYSCAPES_DATA_DIR = './data/cityscapes_dataset/cityscape/'
     ADE20K_DATA_DIR = './data/ADEChallengeData2016/'
 
-    Kaggle_DATA_DIR = '/media/data1/hewei/'
+    Kaggle_DATA_DIR = '/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/data/Kaggle/'
       
     ADE20K_eval_list = os.path.join('./data/list/ade20k_val_list.txt')
     CITYSCAPES_eval_list = os.path.join('./data/list/cityscapes_val_list.txt')
@@ -60,7 +60,7 @@ class Config(object):
     TRAINING_SIZE = [720, 720] 
 
     #previously 60001
-    TRAINING_STEPS = 15000
+    TRAINING_STEPS = 5000
     
     N_WORKERS = 8
     BATCH_SIZE = 16

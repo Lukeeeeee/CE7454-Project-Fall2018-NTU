@@ -115,6 +115,7 @@ def main():
     loss_sub4, loss_sub24, loss_sub124, reduced_loss = create_losses(train_net, train_net.labels, cfg)
 
     # Setup validation network and validation samples
+
     with tf.variable_scope('', reuse=True):
         val_reader = ImageReader(cfg, mode='eval')
         val_net = ICNet_BN(image_reader=val_reader, 
@@ -145,7 +146,7 @@ def main():
     
     # Create session & restore weights (Here we only need to use train_net to create session since we reuse it)
     train_net.create_session()
-    train_net.restore(cfg.model_weight, restore_var)
+    # train_net.restore(cfg.model_weight, restore_var)
     saver = tf.train.Saver(var_list=tf.global_variables(), max_to_keep=5)
 
     # Iterate over training steps.
