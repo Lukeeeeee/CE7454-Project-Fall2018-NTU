@@ -4,6 +4,8 @@ from data import DATA_PATH
 from src import SRC_PATH
 from log.model import MODEL_PATH
 from log import LOG_PATH
+import time
+import json
 
 
 class Config(object):
@@ -76,7 +78,12 @@ class Config(object):
     POWER = 0.9
     RANDOM_SEED = 1234
     WEIGHT_DECAY = 0.0001
-    SNAPSHOT_DIR = LOG_PATH
+
+    SNAPSHOT_DIR = os.path.join(LOG_PATH, time.strftime("%Y-%m-%d_%H-%M-%S"))
+    while os.path.exists(SNAPSHOT_DIR):
+        SNAPSHOT_DIR = os.path.join(LOG_PATH, time.strftime("%Y-%m-%d_%H-%M-%S"))
+    os.mkdir(SNAPSHOT_DIR)
+
     SAVE_NUM_IMAGES = 4
     SAVE_PRED_EVERY = 500
 
@@ -104,13 +111,35 @@ class Config(object):
     def display(self):
         """Display Configuration values."""
         print("\nConfigurations:")
+        log_config = {}
         for a in dir(self):
             if not a.startswith("__") and not callable(getattr(self, a)) and not isinstance(getattr(self, a), dict):
                 print("{:30} {}".format(a, getattr(self, a)))
+                if isinstance(getattr(self, a), np.ndarray):
+                    log_config[a] = getattr(self, a).tolist()
+                elif isinstance(getattr(self, a), np.float32):
+                    log_config[a] = float(getattr(self, a))
+                else:
+                    log_config[a] = getattr(self, a)
 
             if a == ("param"):
                 print(a)
                 for k, v in getattr(self, a).items():
                     print("   {:27} {}".format(k, v))
+                    log_config[k] = v
 
         print("\n")
+        self.save_to_json(dict=log_config, path=os.path.join(self.SNAPSHOT_DIR, 'config.json'))
+
+    @staticmethod
+    def load_json(file_path):
+        with open(file_path, 'r') as f:
+            res = json.load(f)
+            return res
+
+    @staticmethod
+    def save_to_json(dict, path, file_name=None):
+        if file_name is not None:
+            path = os.path.join(path, file_name)
+        with open(path, 'w') as f:
+            json.dump(obj=dict, fp=f, indent=4)

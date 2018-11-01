@@ -157,13 +157,16 @@ def main():
         start_time = time.time()
 
         feed_dict = {step_ph: step}
-        if step % cfg.SAVE_PRED_EVERY == 0:
+        if (step + 1) % cfg.SAVE_PRED_EVERY == 0:
             loss_value, loss1, loss2, loss3, val_loss_value, _ = train_net.sess.run(
                 [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op], feed_dict=feed_dict)
             train_net.save(saver, cfg.SNAPSHOT_DIR, step)
+
         else:
-            loss_value, loss1, loss2, loss3, val_loss_value, _ = train_net.sess.run(
-                [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op], feed_dict=feed_dict)
+            loss_value, loss1, loss2, loss3, val_loss_value, _, label = train_net.sess.run(
+                [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op, train_net.labels],
+                feed_dict=feed_dict)
+            # print(label)
 
         duration = time.time() - start_time
         print(
