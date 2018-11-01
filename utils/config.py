@@ -72,7 +72,7 @@ class Config(object):
     TRAINING_STEPS = 5000
 
     N_WORKERS = 8
-    BATCH_SIZE = 16
+    BATCH_SIZE = 8
     LEARNING_RATE = 1e-4
     MOMENTUM = 0.9
     POWER = 0.9
@@ -142,4 +142,4 @@ class Config(object):
         if file_name is not None:
             path = os.path.join(path, file_name)
         with open(path, 'w') as f:
-            json.dump(obj=dict, fp=f, indent=4)
+            json.dump(obj=dict, fp=f, indent=4, sort_keys=True)

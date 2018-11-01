@@ -1,15 +1,23 @@
 """
 This code is based on DrSleep's framework: https://github.com/DrSleep/tensorflow-deeplab-resnet 
 """
+import os
+import sys
+
+CURRENT_PATH = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(CURRENT_PATH)
+PAR_PATH = os.path.abspath(os.path.join(CURRENT_PATH, os.pardir))
+sys.path.append(PAR_PATH)
+
 import argparse
 import time
 
 import tensorflow as tf
+from utils.config import Config
 
 from src.model import ICNet_BN
 from utils.config import Config
 from utils.image_reader import ImageReader, prepare_label
-import os
 
 
 def get_arguments():
@@ -153,25 +161,42 @@ def main():
     saver = tf.train.Saver(var_list=tf.global_variables(), max_to_keep=5)
 
     # Iterate over training steps.
-    for step in range(cfg.TRAINING_STEPS):
-        start_time = time.time()
+    train_info = []
+    try:
+        for step in range(cfg.TRAINING_STEPS):
+            start_time = time.time()
 
-        feed_dict = {step_ph: step}
-        if (step + 1) % cfg.SAVE_PRED_EVERY == 0:
-            loss_value, loss1, loss2, loss3, val_loss_value, _ = train_net.sess.run(
-                [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op], feed_dict=feed_dict)
-            train_net.save(saver, cfg.SNAPSHOT_DIR, step)
+            feed_dict = {step_ph: step}
+            if (step + 1) % cfg.SAVE_PRED_EVERY == 0:
+                loss_value, loss1, loss2, loss3, val_loss_value, _ = train_net.sess.run(
+                    [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op], feed_dict=feed_dict)
+                train_net.save(saver, cfg.SNAPSHOT_DIR, step)
 
-        else:
-            loss_value, loss1, loss2, loss3, val_loss_value, _, label = train_net.sess.run(
-                [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op, train_net.labels],
-                feed_dict=feed_dict)
-            # print(label)
+            else:
+                loss_value, loss1, loss2, loss3, val_loss_value, _, label = train_net.sess.run(
+                    [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op, train_net.labels],
+                    feed_dict=feed_dict)
 
-        duration = time.time() - start_time
-        print(
-            'step {:d} \t total loss = {:.3f}, sub4 = {:.3f}, sub24 = {:.3f}, sub124 = {:.3f}, val_loss: {:.3f} ({:.3f} sec/step)'. \
-                format(step, loss_value, loss1, loss2, loss3, val_loss_value, duration))
+                # print(label)
+
+            duration = time.time() - start_time
+            log = {
+                'LOSS_VALUE': float(loss_value),
+                'LOSS_1': float(loss1),
+                'LOSS_2': float(loss2),
+                'LOSS_3': float(loss3),
+                'VALIDATION_LOSS_VALUE': float(val_loss_value),
+                'DURATION': float(duration),
+                'STEP': float(step),
+
+            }
+            train_info.append(log)
+            print(
+                'step {:d} \t total loss = {:.3f}, sub4 = {:.3f}, sub24 = {:.3f}, sub124 = {:.3f}, val_loss: {:.3f} ({:.3f} sec/step)'. \
+                    format(step, loss_value, loss1, loss2, loss3, val_loss_value, duration))
+    except KeyboardInterrupt:
+        Config.save_to_json(dict=train_info, path=Config.SNAPSHOT_DIR, file_name='loss.json')
+        print("loss.json was saved at %s" % Config.SNAPSHOT_DIR)
 
 
 if __name__ == '__main__':
