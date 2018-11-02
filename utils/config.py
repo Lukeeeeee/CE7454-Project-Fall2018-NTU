@@ -59,7 +59,7 @@ class Config(object):
                     'num_classes': 2,
                     'ignore_label': 100,
                     'eval_size': [1280, 1918],
-                    'eval_steps': 500,
+                    'eval_steps': 100,
                     'eval_list': Kaggle_eval_list,
                     'train_list': Kaggle_train_list,
                     'data_dir': Kaggle_DATA_DIR}
@@ -88,12 +88,15 @@ class Config(object):
     LAMBDA3 = 1.0
 
     def __init__(self, dataset, is_training=False, filter_scale=1, random_scale=False, random_mirror=False,
-                 log_path_end=''):
+                 log_path_end='', eval_path_log=None):
         print('Setup configurations...')
-        self.SNAPSHOT_DIR = os.path.join(LOG_PATH, time.strftime("%Y-%m-%d_%H-%M-%S") + '_' + log_path_end)
-        while os.path.exists(self.SNAPSHOT_DIR):
+        if eval_path_log:
+            self.SNAPSHOT_DIR = eval_path_log
+        else:
             self.SNAPSHOT_DIR = os.path.join(LOG_PATH, time.strftime("%Y-%m-%d_%H-%M-%S") + '_' + log_path_end)
-        os.mkdir(self.SNAPSHOT_DIR)
+            while os.path.exists(self.SNAPSHOT_DIR):
+                self.SNAPSHOT_DIR = os.path.join(LOG_PATH, time.strftime("%Y-%m-%d_%H-%M-%S") + '_' + log_path_end)
+            os.mkdir(self.SNAPSHOT_DIR)
         if dataset == 'ade20k':
             self.param = self.ADE20k_param
         elif dataset == 'cityscapes':

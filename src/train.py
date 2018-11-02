@@ -52,6 +52,7 @@ def get_mask(gt, num_classes, ignore_label):
 global_logits = []
 global_label = []
 
+
 def create_loss(output, label, num_classes, ignore_label):
     raw_pred = tf.reshape(output, [-1, num_classes])
     label = prepare_label(label, tf.stack(output.get_shape()[1:3]), num_classes=num_classes, one_hot=False)
@@ -217,5 +218,5 @@ if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     lr_list = [0.1, 0.09, 0.03, 0.01, 0.009, 0.003, 0.001, 0.0009, 0.00]
-    for lr in lr_list:
-        main(lr=lr)
+    # for lr in lr_list:
+    main(lr=0.001)

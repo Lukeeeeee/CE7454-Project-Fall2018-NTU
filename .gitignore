@@ -113,3 +113,4 @@ log/*
 !log/model
 !data/README.md
 
+log/2018*/eval_img/*
