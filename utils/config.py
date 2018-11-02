@@ -51,7 +51,7 @@ class Config(object):
                    'trainval': os.path.join(MODEL_PATH, 'cityscapes', 'icnet_cityscapes_trainval_90k.npy'),
                    'train_bn': os.path.join(MODEL_PATH, 'cityscapes', 'icnet_cityscapes_train_30k_bnnomerge.npy'),
                    'trainval_bn': os.path.join(MODEL_PATH, 'cityscapes', 'icnet_cityscapes_trainval_90k_bnnomerge.npy'),
-                   'others': os.path.join(LOG_PATH, 'model.ckpt-500')}
+                   'others': os.path.join(LOG_PATH, '2018-11-01_22-53-22/model.ckpt-199')}
     # assert os.path.isfile()
 
     ## If you want to train on your own dataset, try to set these parameters.
@@ -69,31 +69,32 @@ class Config(object):
     TRAINING_SIZE = [720, 720]
 
     # previously 60001
-    TRAINING_STEPS = 2000
+    TRAINING_STEPS = 5000
 
     N_WORKERS = 8
-    BATCH_SIZE = 16
+    BATCH_SIZE = 8
     LEARNING_RATE = 1e-4
     MOMENTUM = 0.9
     POWER = 0.9
-    RANDOM_SEED = int(round(time.time() * 1000) % 2 ** 31 - 1)
+    RANDOM_SEED = 1234
     WEIGHT_DECAY = 0.0001
 
+    SNAPSHOT_DIR = os.path.join(LOG_PATH, time.strftime("%Y-%m-%d_%H-%M-%S"))
+    while os.path.exists(SNAPSHOT_DIR):
+        SNAPSHOT_DIR = os.path.join(LOG_PATH, time.strftime("%Y-%m-%d_%H-%M-%S"))
+    os.mkdir(SNAPSHOT_DIR)
+
     SAVE_NUM_IMAGES = 4
-    SAVE_PRED_EVERY = 500
+    SAVE_PRED_EVERY = 50
 
     # Loss Function = LAMBDA1 * sub4_loss + LAMBDA2 * sub24_loss + LAMBDA3 * sub124_loss
     LAMBDA1 = 0.16
     LAMBDA2 = 0.4
     LAMBDA3 = 1.0
 
-    def __init__(self, dataset, is_training=False, filter_scale=1, random_scale=False, random_mirror=False,
-                 log_path_end=''):
+    def __init__(self, dataset, is_training=False, filter_scale=1, random_scale=False, random_mirror=False):
         print('Setup configurations...')
-        self.SNAPSHOT_DIR = os.path.join(LOG_PATH, time.strftime("%Y-%m-%d_%H-%M-%S") + '_' + log_path_end)
-        while os.path.exists(self.SNAPSHOT_DIR):
-            self.SNAPSHOT_DIR = os.path.join(LOG_PATH, time.strftime("%Y-%m-%d_%H-%M-%S") + '_' + log_path_end)
-        os.mkdir(self.SNAPSHOT_DIR)
+
         if dataset == 'ade20k':
             self.param = self.ADE20k_param
         elif dataset == 'cityscapes':

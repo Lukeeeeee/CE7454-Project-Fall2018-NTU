@@ -6,8 +6,6 @@ from tqdm import trange
 from utils.config import Config
 from utils.image_reader import ImageReader
 from src.model import ICNet, ICNet_BN
-import os
-from log import LOG_PATH
 
 # mapping different model
 model_config = {'train': ICNet, 'trainval': ICNet, 'train_bn': ICNet_BN, 'trainval_bn': ICNet_BN, 'others': ICNet_BN}
@@ -30,10 +28,9 @@ def get_arguments():
     return parser.parse_args()
 
 
-def main(model_log_dir):
+def main():
     args = get_arguments()
     cfg = Config(dataset=args.dataset, is_training=False, filter_scale=args.filter_scale)
-    cfg.model_paths['others'] = os.path.join(LOG_PATH, model_log_dir, 'model.ckpt-1999')
 
     model = model_config[args.model]
 
@@ -62,12 +59,9 @@ def main(model_log_dir):
 
     for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
         _ = net.sess.run(update_op)
-        # pred, label = net.sess.run([pred, gt])
-        # pred, label = net.sess.run([net.output, net.labels])
-        pass
 
     print('mIoU: {}'.format(net.sess.run(mIoU)))
 
 
 if __name__ == '__main__':
-    main(model_log_dir='2018-11-02_02-59-21_lr=0.001')
+    main()
