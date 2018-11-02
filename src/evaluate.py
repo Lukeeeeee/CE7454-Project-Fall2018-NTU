@@ -62,7 +62,6 @@ def main(model_log_dir):
 
     for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
         _ = net.sess.run(update_op)
-        # pred, label = net.sess.run([pred, gt])
         # pred, label = net.sess.run([net.output, net.labels])
         pass
 
@@ -70,4 +69,6 @@ def main(model_log_dir):
 
 
 if __name__ == '__main__':
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     main(model_log_dir='2018-11-02_02-59-21_lr=0.001')

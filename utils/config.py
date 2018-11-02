@@ -71,7 +71,7 @@ class Config(object):
     # previously 60001
     TRAINING_STEPS = 2000
 
-    N_WORKERS = 8
+    N_WORKERS = 32
     BATCH_SIZE = 16
     LEARNING_RATE = 1e-4
     MOMENTUM = 0.9

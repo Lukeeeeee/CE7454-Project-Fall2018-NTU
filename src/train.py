@@ -49,6 +49,9 @@ def get_mask(gt, num_classes, ignore_label):
     return indices
 
 
+global_logits = []
+global_label = []
+
 def create_loss(output, label, num_classes, ignore_label):
     raw_pred = tf.reshape(output, [-1, num_classes])
     label = prepare_label(label, tf.stack(output.get_shape()[1:3]), num_classes=num_classes, one_hot=False)
@@ -60,6 +63,9 @@ def create_loss(output, label, num_classes, ignore_label):
 
     loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pred, labels=gt)
     reduced_loss = tf.reduce_mean(loss)
+
+    global_label.append(gt)
+    global_logits.append(pred)
 
     return reduced_loss
 
@@ -179,12 +185,10 @@ def main(lr=None):
                 train_net.save(saver, cfg.SNAPSHOT_DIR, step)
 
             else:
-                loss_value, loss1, loss2, loss3, val_loss_value, _, label = train_net.sess.run(
-                    [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op, train_net.labels],
+                loss_value, loss1, loss2, loss3, val_loss_value, _, label, pred, label_logit, pred_logit = train_net.sess.run(
+                    [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op, \
+                     train_net.labels, train_net.layers['conv6_cls'], global_label[-1], global_logits[-1]],
                     feed_dict=feed_dict)
-
-                # print(label)
-
             duration = time.time() - start_time
             log = {
                 'LOSS_VALUE': float(loss_value),
@@ -194,7 +198,6 @@ def main(lr=None):
                 'VALIDATION_LOSS_VALUE': float(val_loss_value),
                 'DURATION': float(duration),
                 'STEP': float(step),
-
             }
             train_info.append(log)
             print(

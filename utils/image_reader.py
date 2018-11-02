@@ -34,11 +34,12 @@ def read_labeled_image_list(data_dir, data_list):
 
 def prepare_label(input_batch, new_size, num_classes, one_hot=True):
     with tf.name_scope('label_encode'):
-        norm_constant = tf.ones_like(input_batch, dtype=tf.uint8) * 255
-        input_batch = input_batch // norm_constant
+
         input_batch = tf.image.resize_nearest_neighbor(input_batch,
                                                        new_size)  # as labels are integer numbers, need to use NN interp.
         input_batch = tf.squeeze(input_batch, axis=[3])  # reducing the channel dimension.
+        norm_constant = tf.ones_like(input_batch, dtype=tf.uint8) * 156
+        input_batch = input_batch - norm_constant
         if one_hot:
             input_batch = tf.one_hot(input_batch, depth=num_classes)
 
@@ -63,8 +64,8 @@ def _parse_function(image_filename, label_filename, img_mean):
     # Decode image & label
     img = tf.image.decode_jpeg(img_contents, channels=3)
     label = tf.image.decode_png(label_contents, channels=1)
-    bias_constant = tf.ones_like(label, dtype=tf.uint8) * 155
-    label = label - bias_constant
+    bias_constant = tf.ones_like(label, dtype=tf.uint8) * 255
+    label = label // bias_constant
     # swap channel and extract mean
     img = _extract_mean(img, img_mean, swap_channel=True)
 
