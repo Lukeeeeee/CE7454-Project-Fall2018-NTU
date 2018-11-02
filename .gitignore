@@ -105,8 +105,7 @@ venv.bak/
 .idea/*
 dataset/*
 !dataset/*.py
-data/*
-data/
+
 model/
 log/
 snapshots/
@@ -118,3 +117,5 @@ log/*
 
 .idea/
 !/data/Kaggle/list/
+
+/data/
