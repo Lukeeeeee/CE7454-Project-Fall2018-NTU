@@ -52,7 +52,7 @@ class Config(object):
                    'trainval': os.path.join(MODEL_PATH, 'cityscapes', 'icnet_cityscapes_trainval_90k.npy'),
                    'train_bn': os.path.join(MODEL_PATH, 'cityscapes', 'icnet_cityscapes_train_30k_bnnomerge.npy'),
                    'trainval_bn': os.path.join(MODEL_PATH, 'cityscapes', 'icnet_cityscapes_trainval_90k_bnnomerge.npy'),
-                   'others': os.path.join(LOG_PATH, '2018-11-01_22-53-22/model.ckpt-199')}
+                   'others': os.path.join(LOG_PATH, '2018-11-02_14-30-53/model.ckpt-499')}
     # assert os.path.isfile()
 
     ## If you want to train on your own dataset, try to set these parameters.

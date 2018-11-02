@@ -90,9 +90,9 @@ def create_losses(net, label, cfg):
     sub24_out = net.layers['sub24_out']
     sub124_out = net.layers['conv6_cls']
 
-    loss_sub4 = create_bce_loss(sub4_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
-    loss_sub24 = create_bce_loss(sub24_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
-    loss_sub124 = create_bce_loss(sub124_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
+    loss_sub4 = create_loss(sub4_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
+    loss_sub24 = create_loss(sub24_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
+    loss_sub124 = create_loss(sub124_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
 
     l2_losses = [cfg.WEIGHT_DECAY * tf.nn.l2_loss(v) for v in tf.trainable_variables() if 'weights' in v.name]
 
