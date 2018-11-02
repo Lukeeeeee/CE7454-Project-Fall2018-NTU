@@ -106,6 +106,9 @@ venv.bak/
 dataset/*
 !dataset/*.py
 data/*
+data/
+model/
+log/
 snapshots/
 !data/__init__.py
 log/*
@@ -113,3 +116,4 @@ log/*
 !log/model
 !data/README.md
 
+.idea/
