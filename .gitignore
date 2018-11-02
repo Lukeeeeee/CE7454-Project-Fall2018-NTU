@@ -118,5 +118,5 @@ log/*
 .idea/
 !/data/Kaggle/list/
 
-!/data/list/
-/data/
+!data/list/
+data/
