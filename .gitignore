@@ -117,3 +117,4 @@ log/*
 !data/README.md
 
 .idea/
+!/data/Kaggle/list/
