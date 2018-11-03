@@ -118,6 +118,5 @@ log/*
 log/2018*/eval_img/*
 .idea/
 !/data/Kaggle/list/
-
+data/Kaggle/
 !data/list/
-data/

@@ -9,17 +9,11 @@ from src.model import ICNet, ICNet_BN
 import os
 from log import LOG_PATH
 import numpy as np
-from PIL import Image
+from src.util import save_pred_to_image
+
+
 # mapping different model
 model_config = {'train': ICNet, 'trainval': ICNet, 'train_bn': ICNet_BN, 'trainval_bn': ICNet_BN, 'others': ICNet_BN}
-
-
-def save_pred_to_image(res, shape, save_path, save_name):
-    if os.path.exists(save_path) is False:
-        os.mkdir(save_path)
-    res = np.array(np.reshape(res, shape), dtype=np.uint8) * 255
-    img = Image.fromarray(res.astype(np.uint8), mode='L')
-    img.save(os.path.join(save_path, save_name))
 
 
 def get_arguments():
@@ -39,13 +33,13 @@ def get_arguments():
     return parser.parse_args()
 
 
-def main(model_log_dir):
+def main(model_log_dir, check_point):
     args = get_arguments()
     cfg = Config(dataset=args.dataset,
                  is_training=False,
                  filter_scale=args.filter_scale,
                  eval_path_log=os.path.join(LOG_PATH, model_log_dir))
-    cfg.model_paths['others'] = os.path.join(LOG_PATH, model_log_dir, 'model.ckpt-1999')
+    cfg.model_paths['others'] = os.path.join(LOG_PATH, model_log_dir, 'model.ckpt-%d' % check_point)
 
     model = model_config[args.model]
 
@@ -73,7 +67,7 @@ def main(model_log_dir):
     net.restore(cfg.model_paths[args.model])
 
     for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
-        _, res = net.sess.run([update_op, pred])
+        _, res, out = net.sess.run([update_op, pred, net.output])
         save_pred_to_image(res=res,
                            shape=cfg.param['eval_size'],
                            save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
@@ -91,4 +85,4 @@ def main(model_log_dir):
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    main(model_log_dir='2018-11-02_02-59-21_lr=0.001')
+    main(model_log_dir='2018-11-03_10-43-00__debug', check_point=1399)
