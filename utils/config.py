@@ -60,9 +60,10 @@ class Config(object):
                     'num_classes': 2,
                     'ignore_label': 100,
                     'eval_size': [1280, 1918],
-                    'eval_steps': 500,
+                    'eval_steps': 10,
                     'eval_list': Kaggle_eval_list,
                     'train_list': Kaggle_train_list,
+                    'loss_type': 'cross_entropy',
                     'data_dir': Kaggle_DATA_DIR}
 
     ## You can modify following lines to train different training configurations.
@@ -77,13 +78,8 @@ class Config(object):
     LEARNING_RATE = 1e-4
     MOMENTUM = 0.9
     POWER = 0.9
-    RANDOM_SEED = 1234
+    RANDOM_SEED = int(round(time.time() * 1000) % 2 ** 31 - 1)
     WEIGHT_DECAY = 0.0001
-
-    SNAPSHOT_DIR = os.path.join(LOG_PATH, time.strftime("%Y-%m-%d_%H-%M-%S"))
-    while os.path.exists(SNAPSHOT_DIR):
-        SNAPSHOT_DIR = os.path.join(LOG_PATH, time.strftime("%Y-%m-%d_%H-%M-%S"))
-    os.mkdir(SNAPSHOT_DIR)
 
     SAVE_NUM_IMAGES = 4
     SAVE_PRED_EVERY = 50
@@ -93,9 +89,16 @@ class Config(object):
     LAMBDA2 = 0.4
     LAMBDA3 = 1.0
 
-    def __init__(self, dataset, is_training=False, filter_scale=1, random_scale=False, random_mirror=False):
+    def __init__(self, dataset, is_training=False, filter_scale=1, random_scale=False, random_mirror=False,
+                 log_path_end='', eval_path_log=None):
         print('Setup configurations...')
-
+        if eval_path_log:
+            self.SNAPSHOT_DIR = eval_path_log
+        else:
+            self.SNAPSHOT_DIR = os.path.join(LOG_PATH, time.strftime("%Y-%m-%d_%H-%M-%S") + '_' + log_path_end)
+            while os.path.exists(self.SNAPSHOT_DIR):
+                self.SNAPSHOT_DIR = os.path.join(LOG_PATH, time.strftime("%Y-%m-%d_%H-%M-%S") + '_' + log_path_end)
+            os.mkdir(self.SNAPSHOT_DIR)
         if dataset == 'ade20k':
             self.param = self.ADE20k_param
         elif dataset == 'cityscapes':

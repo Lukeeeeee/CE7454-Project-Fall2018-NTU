@@ -115,8 +115,7 @@ log/*
 !log/model
 !data/README.md
 
+log/2018*/eval_img/*
 .idea/
-!/data/Kaggle/list/
-
-!/data/list/
 /data/
+data/*

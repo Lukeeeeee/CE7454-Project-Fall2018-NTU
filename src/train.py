@@ -18,6 +18,7 @@ from utils.config import Config
 from src.model import ICNet_BN
 from utils.config import Config
 from utils.image_reader import ImageReader, prepare_label
+from src.util import get_mask, create_bce_loss, create_losses, global_logits, global_label
 
 
 def get_arguments():
@@ -38,7 +39,6 @@ def get_arguments():
                         help="1 for using pruned model, while 2 for using non-pruned model.",
                         choices=[1, 2])
     return parser.parse_args()
-
 
 def get_mask(gt, num_classes, ignore_label):
     less_equal_class = tf.less_equal(gt, num_classes - 1)
@@ -103,8 +103,9 @@ def create_losses(net, label, cfg):
 
 
 class TrainConfig(Config):
-    def __init__(self, dataset, is_training, filter_scale=1, random_scale=None, random_mirror=None):
-        Config.__init__(self, dataset, is_training, filter_scale, random_scale, random_mirror)
+    def __init__(self, dataset, is_training, filter_scale=1, random_scale=None, random_mirror=None, log_path_end=''):
+        Config.__init__(self, dataset, is_training, filter_scale, random_scale, random_mirror,
+                        log_path_end=log_path_end)
 
     # Set pre-trained weights here (You can download weight using `python script/download_weights.py`) 
     # Note that you need to use "bnnomerge" version.
@@ -119,8 +120,9 @@ class TrainConfig(Config):
     LEARNING_RATE = 5e-4
 
 
-def main():
+def main(lr=None, log_path_end=''):
     """Create the model and start the training."""
+    tf.reset_default_graph()
     args = get_arguments()
 
     """
@@ -134,7 +136,11 @@ def main():
                       is_training=True,
                       random_scale=args.random_scale,
                       random_mirror=args.random_mirror,
-                      filter_scale=args.filter_scale)
+                      filter_scale=args.filter_scale,
+                      log_path_end=log_path_end)
+    if lr:
+        cfg.LEARNING_RATE = lr
+    tf.set_random_seed(cfg.RANDOM_SEED)
     cfg.display()
 
     # Setup training network and training samples
@@ -160,7 +166,7 @@ def main():
 
     # Set restore variable 
     # restore_var = tf.global_variables()
-    restore_var = [v for v in tf.global_variables() if 'conv6_cls' not in v.name]
+    # restore_var = [v for v in tf.global_variables() if 'conv6_cls' not in v.name]
     all_trainable = [v for v in tf.trainable_variables() if
                      ('beta' not in v.name and 'gamma' not in v.name) or args.train_beta_gamma]
 
@@ -177,7 +183,7 @@ def main():
 
     # Create session & restore weights (Here we only need to use train_net to create session since we reuse it)
     train_net.create_session()
-    #train_net.restore(cfg.model_weight, restore_var)
+    # train_net.restore(cfg.model_weight, restore_var)
     saver = tf.train.Saver(var_list=tf.global_variables(), max_to_keep=5)
 
     # Iterate over training steps.
@@ -193,12 +199,11 @@ def main():
                 train_net.save(saver, cfg.SNAPSHOT_DIR, step)
 
             else:
-                loss_value, loss1, loss2, loss3, val_loss_value, _, label = train_net.sess.run(
-                    [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op, train_net.labels],
+                loss_value, loss1, loss2, loss3, val_loss_value, _, label, pred, label_logit, pred_logit = train_net.sess.run(
+                    [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op, \
+                     train_net.labels, train_net.layers['conv6_cls'], global_label[-1], global_logits[-1]],
                     feed_dict=feed_dict)
-
-                #print(label)
-
+                # print(label)
             duration = time.time() - start_time
             log = {
                 'LOSS_VALUE': float(loss_value),
@@ -208,18 +213,22 @@ def main():
                 'VALIDATION_LOSS_VALUE': float(val_loss_value),
                 'DURATION': float(duration),
                 'STEP': float(step),
-
             }
             train_info.append(log)
             print(
                 'step {:d} \t total loss = {:.3f}, sub4 = {:.3f}, sub24 = {:.3f}, sub124 = {:.3f}, val_loss: {:.3f} ({:.3f} sec/step)'. \
                     format(step, loss_value, loss1, loss2, loss3, val_loss_value, duration))
     except KeyboardInterrupt:
-        Config.save_to_json(dict=train_info, path=Config.SNAPSHOT_DIR, file_name='loss.json')
-        print("loss.json was saved at %s" % Config.SNAPSHOT_DIR)
+        Config.save_to_json(dict=train_info, path=cfg.SNAPSHOT_DIR, file_name='loss.json')
+        print("loss.json was saved at %s" % cfg.SNAPSHOT_DIR)
+    Config.save_to_json(dict=train_info, path=cfg.SNAPSHOT_DIR, file_name='loss.json')
+    print("loss.json was saved at %s" % cfg.SNAPSHOT_DIR)
+    sess = tf.get_default_session()
+    if sess:
+        sess._exit__(None, None, None)
 
 
 if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    main()
+    main(log_path_end='_debug')
