@@ -64,7 +64,7 @@ def create_bce_loss(output, label, num_classes, ignore_label):
     r = tf.reduce_sum(tf.cast(gt_one_hot,tf.float32))
     dice = tf.math.log((2. * inse + 1e-5) / (l + r + 1e-5))
 
-    tf.Print(dice)
+    #tf.Print(dice)
     loss = BCE-dice
     reduced_loss = tf.reduce_mean(loss)
 
