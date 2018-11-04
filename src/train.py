@@ -90,9 +90,9 @@ def create_losses(net, label, cfg):
     sub24_out = net.layers['sub24_out']
     sub124_out = net.layers['conv6_cls']
 
-    loss_sub4 = create_bce_loss(sub4_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
-    loss_sub24 = create_bce_loss(sub24_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
-    loss_sub124 = create_bce_loss(sub124_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
+    loss_sub4 = create_loss(sub4_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
+    loss_sub24 = create_loss(sub24_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
+    loss_sub124 = create_loss(sub124_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
 
     l2_losses = [cfg.WEIGHT_DECAY * tf.nn.l2_loss(v) for v in tf.trainable_variables() if 'weights' in v.name]
 
@@ -103,9 +103,8 @@ def create_losses(net, label, cfg):
 
 
 class TrainConfig(Config):
-    def __init__(self, dataset, is_training, filter_scale=1, random_scale=None, random_mirror=None, log_path_end=''):
-        Config.__init__(self, dataset, is_training, filter_scale, random_scale, random_mirror,
-                        log_path_end=log_path_end)
+    def __init__(self, dataset, is_training, filter_scale=1, random_scale=None, random_mirror=None):
+        Config.__init__(self, dataset, is_training, filter_scale, random_scale, random_mirror)
 
     # Set pre-trained weights here (You can download weight using `python script/download_weights.py`) 
     # Note that you need to use "bnnomerge" version.
@@ -120,7 +119,7 @@ class TrainConfig(Config):
     LEARNING_RATE = 5e-4
 
 
-def main(lr=None, log_path_end=''):
+def main():
     """Create the model and start the training."""
     tf.reset_default_graph()
     args = get_arguments()
@@ -137,10 +136,8 @@ def main(lr=None, log_path_end=''):
                       random_scale=args.random_scale,
                       random_mirror=args.random_mirror,
                       filter_scale=args.filter_scale,
-                      log_path_end=log_path_end)
-    if lr:
-        cfg.LEARNING_RATE = lr
-    tf.set_random_seed(cfg.RANDOM_SEED)
+                    )
+
     cfg.display()
 
     # Setup training network and training samples
@@ -166,7 +163,7 @@ def main(lr=None, log_path_end=''):
 
     # Set restore variable 
     # restore_var = tf.global_variables()
-    # restore_var = [v for v in tf.global_variables() if 'conv6_cls' not in v.name]
+    restore_var = [v for v in tf.global_variables() if 'conv6_cls' not in v.name]
     all_trainable = [v for v in tf.trainable_variables() if
                      ('beta' not in v.name and 'gamma' not in v.name) or args.train_beta_gamma]
 
@@ -183,7 +180,7 @@ def main(lr=None, log_path_end=''):
 
     # Create session & restore weights (Here we only need to use train_net to create session since we reuse it)
     train_net.create_session()
-    # train_net.restore(cfg.model_weight, restore_var)
+    train_net.restore(cfg.model_weight, restore_var)
     saver = tf.train.Saver(var_list=tf.global_variables(), max_to_keep=5)
 
     # Iterate over training steps.
@@ -199,10 +196,8 @@ def main(lr=None, log_path_end=''):
                 train_net.save(saver, cfg.SNAPSHOT_DIR, step)
 
             else:
-                loss_value, loss1, loss2, loss3, val_loss_value, _, label, pred, label_logit, pred_logit = train_net.sess.run(
-                    [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op, \
-                     train_net.labels, train_net.layers['conv6_cls'], global_label[-1], global_logits[-1]],
-                    feed_dict=feed_dict)
+                loss_value, loss1, loss2, loss3, val_loss_value, _ = train_net.sess.run(
+                    [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op],feed_dict=feed_dict)
                 # print(label)
             duration = time.time() - start_time
             log = {
@@ -231,4 +226,4 @@ def main(lr=None, log_path_end=''):
 if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    main(log_path_end='_debug')
+    main()

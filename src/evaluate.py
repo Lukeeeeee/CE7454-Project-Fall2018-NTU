@@ -11,6 +11,18 @@ from log import LOG_PATH
 import numpy as np
 from src.util import save_pred_to_image
 
+'''add'''
+import argparse
+import tensorflow as tf
+import numpy as np
+import cv2
+import time
+import matplotlib.pyplot as plt
+
+
+
+from tqdm import trange
+from utils.config import Config
 
 # mapping different model
 model_config = {'train': ICNet, 'trainval': ICNet, 'train_bn': ICNet_BN, 'trainval_bn': ICNet_BN, 'others': ICNet_BN}
@@ -66,6 +78,26 @@ def main(model_log_dir, check_point):
     net.create_session()
     net.restore(cfg.model_paths[args.model])
 
+    im1 = cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/valid/data/1aba91a601c6_04.jpg')
+    im2=cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/valid/mask/1aba91a601c6_04_mask.png',cv2.IMREAD_GRAYSCALE)
+    if im1.shape != cfg.INFER_SIZE:
+        im1 = cv2.resize(im1, (cfg.INFER_SIZE[1], cfg.INFER_SIZE[0]))
+
+    results1 = net.predict(im1)
+    #overlap_results1 = 0.5 * im1 + 0.5 * results1[0]
+    #vis_im1 = np.concatenate([im1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
+    print(results1.max,results1.min)
+    results1=results1[0][:,:,0]*255
+    plt.subplot(131)
+    plt.imshow(im1)
+    plt.subplot(132)
+    plt.imshow(im2, cmap='gray')
+    plt.subplot(133)
+    plt.imshow(results1, cmap='gray')
+
+    plt.show()
+
+
     for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
         _, res, out = net.sess.run([update_op, pred, net.output])
         save_pred_to_image(res=res,
@@ -85,4 +117,4 @@ def main(model_log_dir, check_point):
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    main(model_log_dir='2018-11-03_10-43-00__debug', check_point=1399)
+    main(model_log_dir='2018-11-04_14-42-15_', check_point=199)
