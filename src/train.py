@@ -48,6 +48,31 @@ def get_mask(gt, num_classes, ignore_label):
 
     return indices
 
+def dice_coef_theoretical(y_pred, y_true):
+    """Define the dice coefficient
+        Args:
+        y_pred: Prediction
+        y_true: Ground truth Label
+        Returns:
+        Dice coefficient
+        """
+
+    y_true_f = tf.cast(tf.reshape(y_true, [-1]), tf.float32)
+
+    y_pred_f = tf.nn.sigmoid(y_pred)
+    y_pred_f = tf.cast(tf.greater(y_pred_f, 0.5), tf.float32)
+    y_pred_f = tf.cast(tf.reshape(y_pred_f, [-1]), tf.float32)
+
+    intersection = tf.reduce_sum(y_true_f * y_pred_f)
+    union = tf.reduce_sum(y_true_f) + tf.reduce_sum(y_pred_f)
+    dice = (2. * intersection) / (union + 0.00001)
+
+    if (tf.reduce_sum(y_pred) == 0) and (tf.reduce_sum(y_true) == 0):
+        dice = 1
+
+    return dice
+
+
 def create_bce_loss(output, label, num_classes, ignore_label):
     raw_pred = tf.reshape(output, [-1, num_classes])
     label = prepare_label(label, tf.stack(output.get_shape()[1:3]), num_classes=num_classes, one_hot=False)
@@ -57,16 +82,16 @@ def create_bce_loss(output, label, num_classes, ignore_label):
     gt = tf.cast(tf.gather(label, indices), tf.int32)
     gt_one_hot= tf.one_hot(gt, num_classes)
     pred = tf.gather(raw_pred, indices)
-    BCE = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=pred, labels=gt_one_hot))
+    BCE = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=pred, labels=gt_one_hot))
 
-    inse = tf.reduce_sum(pred * tf.cast(gt_one_hot,tf.float32))
-    l = tf.reduce_sum(pred)
-    r = tf.reduce_sum(tf.cast(gt_one_hot,tf.float32))
-    dice = tf.math.log((2. * inse + 1e-5) / (l + r + 1e-5))
-
+    # inse = tf.reduce_sum(pred * tf.cast(gt_one_hot,tf.float32))
+    # l = tf.reduce_sum(pred)
+    # r = tf.reduce_sum(tf.cast(gt_one_hot,tf.float32))
+    # dice = tf.math.log((2. * inse + 1e-5) / (l + r + 1e-5))
+    dice = dice_coef_theoretical(pred,gt_one_hot)
     #tf.Print(dice)
-    loss = BCE-dice
-    reduced_loss = tf.reduce_mean(loss)
+    loss = BCE-tf.math.log(dice)
+    reduced_loss = loss
 
     return reduced_loss
 
@@ -90,9 +115,9 @@ def create_losses(net, label, cfg):
     sub24_out = net.layers['sub24_out']
     sub124_out = net.layers['conv6_cls']
 
-    loss_sub4 = create_loss(sub4_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
-    loss_sub24 = create_loss(sub24_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
-    loss_sub124 = create_loss(sub124_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
+    loss_sub4 = create_bce_loss(sub4_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
+    loss_sub24 = create_bce_loss(sub24_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
+    loss_sub124 = create_bce_loss(sub124_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
 
     l2_losses = [cfg.WEIGHT_DECAY * tf.nn.l2_loss(v) for v in tf.trainable_variables() if 'weights' in v.name]
 
