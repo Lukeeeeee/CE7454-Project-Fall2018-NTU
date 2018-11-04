@@ -14,7 +14,6 @@ import time
 
 import tensorflow as tf
 from utils.config import Config
-
 from src.model import ICNet_BN
 from utils.config import Config
 from utils.image_reader import ImageReader, prepare_label
@@ -40,6 +39,7 @@ def get_arguments():
                         choices=[1, 2])
     return parser.parse_args()
 
+
 def get_mask(gt, num_classes, ignore_label):
     less_equal_class = tf.less_equal(gt, num_classes - 1)
     not_equal_ignore = tf.not_equal(gt, ignore_label)
@@ -47,6 +47,7 @@ def get_mask(gt, num_classes, ignore_label):
     indices = tf.squeeze(tf.where(mask), 1)
 
     return indices
+
 
 def dice_coef_theoretical(y_pred, y_true):
     """Define the dice coefficient
@@ -80,7 +81,7 @@ def create_bce_loss(output, label, num_classes, ignore_label):
 
     indices = get_mask(label, num_classes, ignore_label)
     gt = tf.cast(tf.gather(label, indices), tf.int32)
-    gt_one_hot= tf.one_hot(gt, num_classes)
+    gt_one_hot = tf.one_hot(gt, num_classes)
     pred = tf.gather(raw_pred, indices)
     BCE = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=pred, labels=gt_one_hot))
 
@@ -88,12 +89,13 @@ def create_bce_loss(output, label, num_classes, ignore_label):
     # l = tf.reduce_sum(pred)
     # r = tf.reduce_sum(tf.cast(gt_one_hot,tf.float32))
     # dice = tf.math.log((2. * inse + 1e-5) / (l + r + 1e-5))
-    dice = dice_coef_theoretical(pred,gt_one_hot)
-    #tf.Print(dice)
-    loss = BCE-tf.math.log(dice)
+    dice = dice_coef_theoretical(pred, gt_one_hot)
+    # tf.Print(dice)
+    loss = BCE - tf.math.log(dice)
     reduced_loss = loss
 
     return reduced_loss
+
 
 def create_loss(output, label, num_classes, ignore_label):
     raw_pred = tf.reshape(output, [-1, num_classes])
@@ -133,7 +135,8 @@ class TrainConfig(Config):
 
     # Set pre-trained weights here (You can download weight using `python script/download_weights.py`) 
     # Note that you need to use "bnnomerge" version.
-    model_weight = '../model/cityscapes/icnet_cityscapes_train_30k_bnnomerge.npy'
+    model_weight = os.path.join('/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/model',
+                                'cityscapes/icnet_cityscapes_train_30k_bnnomerge.npy')
 
     # Set hyperparameters here, you can get much more setting in Config Class, see 'utils/config.py' for details.
     LAMBDA1 = 0.16
@@ -161,7 +164,7 @@ def main():
                       random_scale=args.random_scale,
                       random_mirror=args.random_mirror,
                       filter_scale=args.filter_scale,
-                    )
+                      )
 
     cfg.display()
 
@@ -222,7 +225,7 @@ def main():
 
             else:
                 loss_value, loss1, loss2, loss3, val_loss_value, _ = train_net.sess.run(
-                    [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op],feed_dict=feed_dict)
+                    [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op], feed_dict=feed_dict)
                 # print(label)
             duration = time.time() - start_time
             log = {

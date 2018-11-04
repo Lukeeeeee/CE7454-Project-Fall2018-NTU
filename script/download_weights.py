@@ -3,9 +3,9 @@ import argparse
 
 parser = argparse.ArgumentParser(description="Reproduced ICNet")
 
-parser.add_argument("--dataset", type=str, default='',
-                        choices=['ade20k', 'cityscapes'],
-                        required=True)
+parser.add_argument("--dataset", type=str, default='cityscapes',
+                    choices=['ade20k', 'cityscapes'],
+                    required=False)
 args = parser.parse_args()
 
 if args.dataset == 'cityscapes':
