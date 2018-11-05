@@ -117,4 +117,4 @@ def main(model_log_dir, check_point):
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    main(model_log_dir='2018-11-04_14-42-15_', check_point=199)
+    main(model_log_dir='2018-11-05_11-46-04_', check_point=4999)

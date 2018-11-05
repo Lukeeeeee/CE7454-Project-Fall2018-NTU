@@ -123,9 +123,13 @@ def submit():
             mask_array = crop_image(mask_array, pads)
             mask_array[mask_array > 0.5] = 1
             mask_array[mask_array <= 0.5] = 0
+
+            plt.imshow(mask_array,cmap='gray')
+            plt.show()
+
             en = run_length_encode(mask_array)
             print('{}/{} cost{}s'.format(index, N,str(stop-start)))
-            f.write('{},{}\n'.format(i, en))
+            #f.write('{},{}\n'.format(i, en))
 
 
 if __name__ == '__main__':

@@ -14,6 +14,7 @@ import time
 
 import tensorflow as tf
 from utils.config import Config
+
 from src.model import ICNet_BN
 from utils.config import Config
 from utils.image_reader import ImageReader, prepare_label
@@ -60,8 +61,12 @@ def dice_coef_theoretical(y_pred, y_true):
 
     y_true_f = tf.cast(tf.reshape(y_true, [-1]), tf.float32)
 
-    y_pred_f = tf.nn.sigmoid(y_pred)
-    y_pred_f = tf.cast(tf.greater(y_pred_f, 0.5), tf.float32)
+    # y_pred_f = tf.nn.sigmoid(y_pred)
+    # y_pred_f = tf.cast(tf.greater(y_pred_f, 0.5), tf.float32)
+    # y_pred_f = tf.cast(tf.reshape(y_pred_f, [-1]), tf.float32)
+
+    y_pred_f = tf.nn.softmax(y_pred)
+    y_pred_f = tf.argmax(y_pred_f,axis=1)
     y_pred_f = tf.cast(tf.reshape(y_pred_f, [-1]), tf.float32)
 
     intersection = tf.reduce_sum(y_true_f * y_pred_f)
@@ -83,15 +88,15 @@ def create_bce_loss(output, label, num_classes, ignore_label):
     gt = tf.cast(tf.gather(label, indices), tf.int32)
     gt_one_hot = tf.one_hot(gt, num_classes)
     pred = tf.gather(raw_pred, indices)
-    BCE = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=pred, labels=gt_one_hot))
+    BCE = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=pred, labels=gt_one_hot))
 
     # inse = tf.reduce_sum(pred * tf.cast(gt_one_hot,tf.float32))
     # l = tf.reduce_sum(pred)
     # r = tf.reduce_sum(tf.cast(gt_one_hot,tf.float32))
     # dice = tf.math.log((2. * inse + 1e-5) / (l + r + 1e-5))
-    dice = dice_coef_theoretical(pred, gt_one_hot)
-    # tf.Print(dice)
-    loss = BCE - tf.math.log(dice)
+    dice = dice_coef_theoretical(pred,gt)
+    #tf.Print(dice)
+    loss = BCE-tf.math.log(dice)
     reduced_loss = loss
 
     return reduced_loss
@@ -117,11 +122,11 @@ def create_losses(net, label, cfg):
     sub24_out = net.layers['sub24_out']
     sub124_out = net.layers['conv6_cls']
 
-    loss_sub4 = create_bce_loss(sub4_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
-    loss_sub24 = create_bce_loss(sub24_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
-    loss_sub124 = create_bce_loss(sub124_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
+    loss_sub4 = create_loss(sub4_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
+    loss_sub24 = create_loss(sub24_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
+    loss_sub124 = create_loss(sub124_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
 
-    l2_losses = [cfg.WEIGHT_DECAY * tf.nn.l2_loss(v) for v in tf.trainable_variables() if 'weights' in v.name]
+    l2_losses = [cfg.WEIGHT_DECAY * tf.nn.l2_loss(v) for v in tf.trainable_variables() if 'weights'  in v.name]
 
     # Calculate weighted loss of three branches, you can tune LAMBDA values to get better results.
     reduced_loss = cfg.LAMBDA1 * loss_sub4 + cfg.LAMBDA2 * loss_sub24 + cfg.LAMBDA3 * loss_sub124 + tf.add_n(l2_losses)
