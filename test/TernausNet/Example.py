@@ -3,7 +3,7 @@ import cv2
 import os
 import torch
 from torch import nn
-from unet_models import unet11
+from test.TernausNet.unet_models import unet11
 from pathlib import Path
 from torch.nn import functional as F
 from torchvision.transforms import ToTensor, Normalize, Compose
