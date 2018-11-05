@@ -28,7 +28,8 @@ class Config(object):
 
     Kaggle_train_list = os.path.join(LIST_PATH, 'train.txt')
 
-    IMG_MEAN = np.array((103.939, 116.779, 123.68), dtype=np.float32)
+    # B G R order
+    IMG_MEAN = np.array((177.682, 175.84, 174.21), dtype=np.float32)
 
     ADE20k_param = {'name': 'ade20k',
                     'num_classes': 150,  # predict: [0~149] corresponding to label [1~150], ignore class 0 (background)
