@@ -86,7 +86,7 @@ def main(model_log_dir, check_point):
     results1 = net.predict(im1)
     #overlap_results1 = 0.5 * im1 + 0.5 * results1[0]
     #vis_im1 = np.concatenate([im1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
-    print(results1.max,results1.min)
+   
     results1=results1[0][:,:,0]*255
     plt.subplot(131)
     plt.imshow(im1)
@@ -117,4 +117,4 @@ def main(model_log_dir, check_point):
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    main(model_log_dir='2018-11-05_11-46-04_', check_point=4999)
+    main(model_log_dir='2018-11-05_20-08-38_', check_point=4999)
