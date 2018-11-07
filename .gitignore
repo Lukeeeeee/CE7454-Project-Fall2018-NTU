@@ -108,15 +108,16 @@ dataset/*
 
 model/
 log/
+log/2018*/eval_img/*
 snapshots/
 !data/__init__.py
 !log/**/*.py
 !log/model
-!data/README.md
 !log/*.py
 
-log/2018*/eval_img/*
 .idea/
-/data/
 data/*
+!data/*.py
+!data/README.md
+!data/list
 #/test/TernausNet/
