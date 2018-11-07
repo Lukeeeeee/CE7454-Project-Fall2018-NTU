@@ -120,3 +120,4 @@ log/2018*/eval_img/*
 /data/
 data/*
 /test/TernausNet/
+!/data/list/

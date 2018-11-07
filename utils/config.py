@@ -61,15 +61,15 @@ class Config(object):
     others_param = {'name': 'Kaggle',
                     'num_classes': 2,
                     'ignore_label': 100,
-                    'eval_size': [1280, 1918],
-                    'eval_steps': 10,
+                    'eval_size': [1280, 1920],
+                    'eval_steps': 100,
                     'eval_list': Kaggle_eval_list,
                     'train_list': Kaggle_train_list,
                     'loss_type': 'cross_entropy',
                     'data_dir': Kaggle_DATA_DIR}
 
     ## You can modify following lines to train different training configurations.
-    INFER_SIZE = [1280, 1918, 3]
+    INFER_SIZE = [1280, 1920, 3]
     TRAINING_SIZE = [720, 720]
 
     # previously 60001
