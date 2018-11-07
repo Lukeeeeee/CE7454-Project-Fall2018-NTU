@@ -17,6 +17,8 @@ label_colours = [[128, 64, 128], [244, 35, 231], [69, 69, 69]
     , [119, 10, 32]]
 # 18 = bicycle
 
+label_colours_kaggle=[[0,0,0],[255,255,255]]
+
 matfn = './utils/color150.mat'
 
 
@@ -33,7 +35,7 @@ def decode_labels(mask, img_shape, num_classes):
     if num_classes == 150:
         color_table = read_labelcolours(matfn)
     else:
-        color_table = label_colours
+        color_table = label_colours_kaggle
 
     color_mat = tf.constant(color_table, dtype=tf.float32)
     onehot_output = tf.one_hot(mask, depth=num_classes)
