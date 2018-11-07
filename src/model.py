@@ -340,7 +340,7 @@ class ICNet_BN(Network):
         return output
 
     def predict(self, image):
-        return self.sess.run(self.output)
+        return self.sess.run(self.output, feed_dict={self.img_placeholder: image})
 
     def setup(self):
         (self.feed('data')

@@ -13,6 +13,8 @@ from src.util import save_pred_to_image
 
 '''add'''
 import argparse
+import tensorflow as tf
+import numpy as np
 import cv2
 import time
 from data import DATA_PATH
@@ -75,8 +77,8 @@ def main(model_log_dir, check_point):
     net.create_session()
     net.restore(cfg.model_paths[args.model])
 
-    im1 = cv2.imread(os.path.join(DATA_PATH, 'Kaggle/valid/data/1aba91a601c6_04.jpg'))
-    im2 = cv2.imread(os.path.join(DATA_PATH, 'Kaggle/valid/mask/1aba91a601c6_04_mask.png'), cv2.IMREAD_GRAYSCALE)
+    im1 = cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/valid/data/1aba91a601c6_04.jpg')
+    im2=cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/valid/mask/1aba91a601c6_04_mask.png',cv2.IMREAD_GRAYSCALE)
     if im1.shape != cfg.INFER_SIZE:
         im1 = cv2.resize(im1, (cfg.INFER_SIZE[1], cfg.INFER_SIZE[0]))
 
