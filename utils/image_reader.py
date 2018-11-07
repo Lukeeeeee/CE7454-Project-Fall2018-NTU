@@ -58,6 +58,7 @@ def _extract_mean(img, img_mean, swap_channel=False):
     return img
 
 
+
 def _parse_function(image_filename, label_filename, img_mean):
     img_contents = tf.read_file(image_filename)
     label_contents = tf.read_file(label_filename)

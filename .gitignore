@@ -120,6 +120,7 @@ snapshots/
 
 .idea/
 data/*
+
 !data/*.py
 !data/README.md
 !data/list
