@@ -200,8 +200,8 @@ def main(lr=None, log_path_end='', bs=None, lambda_list=None):
     # Using Poly learning rate policy 
     base_lr = tf.constant(cfg.LEARNING_RATE)
     step_ph = tf.placeholder(dtype=tf.float32, shape=())
-    # learning_rate = tf.scalar_mul(base_lr, tf.pow((1 - step_ph / cfg.TRAINING_EPOCHS), cfg.POWER))
-    learning_rate = base_lr
+    learning_rate = tf.scalar_mul(base_lr, tf.pow((1 - step_ph / cfg.TRAINING_EPOCHS), cfg.POWER))
+    # learning_rate = base_lr
 
     # Set restore variable
     # restore_var = tf.global_variables()
