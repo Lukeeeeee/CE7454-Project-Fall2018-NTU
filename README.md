@@ -5,7 +5,7 @@ CE7454 Project for Deep Learning for Data Science  Fall 2018 NTU
 ### Setup
 
 1. Clone this repo into your local PC
-2. Download carvana-image-masking-challenge dataset into `/dataset` ([kaggle API](https://github.com/Kaggle/kaggle-api) is recommended)
+2. Prepare your dataset carvana-image-masking-challenge into `/dataset` ([kaggle API](https://github.com/Kaggle/kaggle-api) is recommended)
   - a. `pip install kaggle`
   - b. Add API credentials 
   From https://www.kaggle.com/<username>/account -> select 'Create API Token' -> Place this file in the location `~/.kaggle/kaggle.json` -> 
