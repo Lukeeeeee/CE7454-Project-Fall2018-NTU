@@ -17,10 +17,9 @@ import tensorflow as tf
 import numpy as np
 import cv2
 import time
+from data import DATA_PATH
 import matplotlib.pyplot as plt
 from PIL import Image
-
-
 from tqdm import trange
 from utils.config import Config
 
@@ -113,7 +112,6 @@ def main(model_log_dir, check_point):
     #
     # plt.show()
 
-
     for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
         _, res, input,labels,out = net.sess.run([update_op, pred, net.images,net.labels,net.output])
         save_pred_to_image(res=res,
@@ -161,4 +159,4 @@ def main(model_log_dir, check_point):
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    main(model_log_dir='2018-11-06_20-49-05_', check_point=4999)
+    main(model_log_dir='2018-11-07_03-38-36_DEFAULT_CONFIG_LOSS_LAMBDA_0.160000_0.400000_0.800000', check_point=4999)

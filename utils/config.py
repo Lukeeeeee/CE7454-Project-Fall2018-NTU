@@ -62,10 +62,12 @@ class Config(object):
                     'num_classes': 2,
                     'ignore_label': 100,
                     'eval_size': [1280, 1918],
-                    'eval_steps': 100,
+                    'eval_steps': 500,
                     'eval_list': Kaggle_eval_list,
                     'train_list': Kaggle_train_list,
                     'loss_type': 'cross_entropy',
+                    'total_train_sample': 4064,
+                    'total_eval_sample': 1024,
                     'data_dir': Kaggle_DATA_DIR}
 
     ## You can modify following lines to train different training configurations.
@@ -73,7 +75,7 @@ class Config(object):
     TRAINING_SIZE = [720, 720]
 
     # previously 60001
-    TRAINING_STEPS = 5000
+    TRAINING_EPOCHS = 20
 
     N_WORKERS = 8
     BATCH_SIZE = 8
@@ -84,7 +86,7 @@ class Config(object):
     WEIGHT_DECAY = 0.0001
 
     SAVE_NUM_IMAGES = 4
-    SAVE_PRED_EVERY = 50
+    SAVE_PRED_EVERY = 2
 
     # Loss Function = LAMBDA1 * sub4_loss + LAMBDA2 * sub24_loss + LAMBDA3 * sub124_loss
     LAMBDA1 = 0.16
