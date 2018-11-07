@@ -13,13 +13,10 @@ from src.util import save_pred_to_image
 
 '''add'''
 import argparse
-import tensorflow as tf
-import numpy as np
 import cv2
 import time
+from data import DATA_PATH
 import matplotlib.pyplot as plt
-
-
 
 from tqdm import trange
 from utils.config import Config
@@ -78,16 +75,16 @@ def main(model_log_dir, check_point):
     net.create_session()
     net.restore(cfg.model_paths[args.model])
 
-    im1 = cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/valid/data/1aba91a601c6_04.jpg')
-    im2=cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/valid/mask/1aba91a601c6_04_mask.png',cv2.IMREAD_GRAYSCALE)
+    im1 = cv2.imread(os.path.join(DATA_PATH, 'Kaggle/valid/data/1aba91a601c6_04.jpg'))
+    im2 = cv2.imread(os.path.join(DATA_PATH, 'Kaggle/valid/mask/1aba91a601c6_04_mask.png'), cv2.IMREAD_GRAYSCALE)
     if im1.shape != cfg.INFER_SIZE:
         im1 = cv2.resize(im1, (cfg.INFER_SIZE[1], cfg.INFER_SIZE[0]))
 
     results1 = net.predict(im1)
-    #overlap_results1 = 0.5 * im1 + 0.5 * results1[0]
-    #vis_im1 = np.concatenate([im1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
-    print(results1.max,results1.min)
-    results1=results1[0][:,:,0]*255
+    # overlap_results1 = 0.5 * im1 + 0.5 * results1[0]
+    # vis_im1 = np.concatenate([im1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
+    print(results1.max, results1.min)
+    results1 = results1[0][:, :, 0] * 255
     plt.subplot(131)
     plt.imshow(im1)
     plt.subplot(132)
@@ -96,7 +93,6 @@ def main(model_log_dir, check_point):
     plt.imshow(results1, cmap='gray')
 
     plt.show()
-
 
     for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
         _, res, out = net.sess.run([update_op, pred, net.output])
@@ -117,4 +113,4 @@ def main(model_log_dir, check_point):
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    main(model_log_dir='2018-11-05_11-46-04_', check_point=4999)
+    main(model_log_dir='2018-11-06_17-59-30_DEFAULT_CONFIG_LOSS_LAMBDA_0.160000_0.500000_1.000000', check_point=4999)

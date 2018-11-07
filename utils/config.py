@@ -62,7 +62,7 @@ class Config(object):
                     'num_classes': 2,
                     'ignore_label': 100,
                     'eval_size': [1280, 1918],
-                    'eval_steps': 10,
+                    'eval_steps': 500,
                     'eval_list': Kaggle_eval_list,
                     'train_list': Kaggle_train_list,
                     'loss_type': 'cross_entropy',

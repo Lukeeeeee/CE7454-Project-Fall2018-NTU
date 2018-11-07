@@ -18,7 +18,6 @@ from utils.config import Config
 from src.model import ICNet_BN
 from utils.config import Config
 from utils.image_reader import ImageReader, prepare_label
-from src.util import get_mask, create_bce_loss, create_losses, global_logits, global_label
 
 
 def get_arguments():
@@ -66,7 +65,7 @@ def dice_coef_theoretical(y_pred, y_true):
     # y_pred_f = tf.cast(tf.reshape(y_pred_f, [-1]), tf.float32)
 
     y_pred_f = tf.nn.softmax(y_pred)
-    y_pred_f = tf.argmax(y_pred_f,axis=1)
+    y_pred_f = tf.argmax(y_pred_f, axis=1)
     y_pred_f = tf.cast(tf.reshape(y_pred_f, [-1]), tf.float32)
 
     intersection = tf.reduce_sum(y_true_f * y_pred_f)
@@ -94,9 +93,9 @@ def create_bce_loss(output, label, num_classes, ignore_label):
     # l = tf.reduce_sum(pred)
     # r = tf.reduce_sum(tf.cast(gt_one_hot,tf.float32))
     # dice = tf.math.log((2. * inse + 1e-5) / (l + r + 1e-5))
-    dice = dice_coef_theoretical(pred,gt)
-    #tf.Print(dice)
-    loss = BCE-tf.math.log(dice)
+    dice = dice_coef_theoretical(pred, gt)
+    # tf.Print(dice)
+    loss = BCE - tf.math.log(dice)
     reduced_loss = loss
 
     return reduced_loss
@@ -126,7 +125,7 @@ def create_losses(net, label, cfg):
     loss_sub24 = create_loss(sub24_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
     loss_sub124 = create_loss(sub124_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
 
-    l2_losses = [cfg.WEIGHT_DECAY * tf.nn.l2_loss(v) for v in tf.trainable_variables() if 'weights'  in v.name]
+    l2_losses = [cfg.WEIGHT_DECAY * tf.nn.l2_loss(v) for v in tf.trainable_variables() if 'weights' in v.name]
 
     # Calculate weighted loss of three branches, you can tune LAMBDA values to get better results.
     reduced_loss = cfg.LAMBDA1 * loss_sub4 + cfg.LAMBDA2 * loss_sub24 + cfg.LAMBDA3 * loss_sub124 + tf.add_n(l2_losses)
@@ -135,8 +134,9 @@ def create_losses(net, label, cfg):
 
 
 class TrainConfig(Config):
-    def __init__(self, dataset, is_training, filter_scale=1, random_scale=None, random_mirror=None):
-        Config.__init__(self, dataset, is_training, filter_scale, random_scale, random_mirror)
+    def __init__(self, dataset, is_training, filter_scale=1, random_scale=None, random_mirror=None, log_path_end=''):
+        Config.__init__(self, dataset, is_training, filter_scale, random_scale, random_mirror,
+                        log_path_end=log_path_end)
 
     # Set pre-trained weights here (You can download weight using `python script/download_weights.py`) 
     # Note that you need to use "bnnomerge" version.
@@ -152,7 +152,7 @@ class TrainConfig(Config):
     LEARNING_RATE = 5e-4
 
 
-def main():
+def main(lr=None, log_path_end='', bs=None, lambda_list=None):
     """Create the model and start the training."""
     tf.reset_default_graph()
     args = get_arguments()
@@ -169,7 +169,16 @@ def main():
                       random_scale=args.random_scale,
                       random_mirror=args.random_mirror,
                       filter_scale=args.filter_scale,
-                      )
+                      log_path_end=log_path_end)
+    if lr:
+        cfg.LEARNING_RATE = lr
+    if bs:
+        cfg.BATCH_SIZE = bs
+
+    if lambda_list:
+        cfg.LAMBDA1 = lambda_list[0]
+        cfg.LAMBDA2 = lambda_list[1]
+        cfg.LAMBDA3 = lambda_list[2]
 
     cfg.display()
 
@@ -245,7 +254,7 @@ def main():
             train_info.append(log)
             print(
                 'step {:d} \t total loss = {:.3f}, sub4 = {:.3f}, sub24 = {:.3f}, sub124 = {:.3f}, val_loss: {:.3f} ({:.3f} sec/step)'. \
-                    format(step, loss_value, loss1, loss2, loss3, val_loss_value, duration))
+                format(step, loss_value, loss1, loss2, loss3, val_loss_value, duration))
     except KeyboardInterrupt:
         Config.save_to_json(dict=train_info, path=cfg.SNAPSHOT_DIR, file_name='loss.json')
         print("loss.json was saved at %s" % cfg.SNAPSHOT_DIR)
@@ -259,4 +268,20 @@ def main():
 if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    main()
+    lr_list = [5e-4, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2]
+    bs_list = [256, 128, 64]
+    lambda_list = [
+        [0.16, 0.4, 1.0],
+
+        [0.16, 0.5, 1.0],
+        [0.16, 0.3, 1.0],
+
+        [0.20, 0.4, 1.0],
+        [0.12, 0.4, 1.0],
+
+        [0.16, 0.4, 1.2],
+        [0.16, 0.4, 0.8],
+    ]
+
+    for lamd in lambda_list:
+        main(lambda_list=lamd, log_path_end='DEFAULT_CONFIG_LOSS_LAMBDA_%f_%f_%f' % (lamd[0], lamd[1], lamd[2]))
