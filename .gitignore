@@ -110,13 +110,13 @@ model/
 log/
 snapshots/
 !data/__init__.py
-log/*
 !log/**/*.py
 !log/model
 !data/README.md
+!log/*.py
 
 log/2018*/eval_img/*
 .idea/
 /data/
 data/*
-/test/TernausNet/
+#/test/TernausNet/

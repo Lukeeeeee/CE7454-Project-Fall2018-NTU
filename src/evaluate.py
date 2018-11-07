@@ -113,4 +113,4 @@ def main(model_log_dir, check_point):
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    main(model_log_dir='2018-11-06_17-59-30_DEFAULT_CONFIG_LOSS_LAMBDA_0.160000_0.500000_1.000000', check_point=4999)
+    main(model_log_dir='2018-11-07_03-38-36_DEFAULT_CONFIG_LOSS_LAMBDA_0.160000_0.400000_0.800000', check_point=4999)
