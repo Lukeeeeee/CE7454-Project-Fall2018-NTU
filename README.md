@@ -17,5 +17,7 @@ export KAGGLE_USERNAME=<username>
 export KAGGLE_KEY=your_key
 ```
   ->`source ~/.bashrc`
-  - c. kaggle competitions download -c carvana-image-masking-challenge
+  - c. ```bash
+  kaggle competitions download -c carvana-image-masking-challenge```
+  - d. Separate the dataset according to `train.csv` `valid.csv` `test.csv`
 
