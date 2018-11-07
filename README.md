@@ -6,3 +6,5 @@ CE7454 Project for Deep Learning for Data Science  Fall 2018 NTU
 
 1. Clone this repo into your local PC
 2. Download kaggle dataset into `/dataset` ([kaggle API](https://github.com/Kaggle/kaggle-api) is recommended)
+  -a 
+  -b
