@@ -106,7 +106,10 @@ venv.bak/
 dataset/*
 !dataset/*.py
 
-model/
+model/*
+!model/*.py
+!model/README.md
+
 log/
 log/2018*/eval_img/*
 snapshots/
@@ -121,3 +124,4 @@ data/*
 !data/README.md
 !data/list
 #/test/TernausNet/
+
