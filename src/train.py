@@ -11,7 +11,7 @@ sys.path.append(PAR_PATH)
 
 import argparse
 import time
-
+import math
 import tensorflow as tf
 from utils.config import Config
 
@@ -201,9 +201,10 @@ def main(lr=None, log_path_end='', bs=None, lambda_list=None):
     # Using Poly learning rate policy 
     base_lr = tf.constant(cfg.LEARNING_RATE)
     step_ph = tf.placeholder(dtype=tf.float32, shape=())
-    learning_rate = tf.scalar_mul(base_lr, tf.pow((1 - step_ph / cfg.TRAINING_STEPS), cfg.POWER))
+    # learning_rate = tf.scalar_mul(base_lr, tf.pow((1 - step_ph / cfg.TRAINING_EPOCHS), cfg.POWER))
+    learning_rate = base_lr
 
-    # Set restore variable 
+    # Set restore variable
     # restore_var = tf.global_variables()
     restore_var = [v for v in tf.global_variables() if 'conv6_cls' not in v.name]
     all_trainable = [v for v in tf.trainable_variables() if
@@ -227,34 +228,33 @@ def main(lr=None, log_path_end='', bs=None, lambda_list=None):
 
     # Iterate over training steps.
     train_info = []
+    iter_max = math.ceil(cfg.param['total_train_sample'] / cfg.BATCH_SIZE)
     try:
-        for step in range(cfg.TRAINING_STEPS):
-            start_time = time.time()
-
-            feed_dict = {step_ph: step}
-            if (step + 1) % cfg.SAVE_PRED_EVERY == 0:
+        for epoch in range(cfg.TRAINING_EPOCHS):
+            feed_dict = {step_ph: epoch}
+            for iter in range(iter_max):
+                start_time = time.time()
                 loss_value, loss1, loss2, loss3, val_loss_value, _ = train_net.sess.run(
-                    [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op], feed_dict=feed_dict)
-                train_net.save(saver, cfg.SNAPSHOT_DIR, step)
+                    [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op],
+                    feed_dict=feed_dict)
+                duration = time.time() - start_time
+                log = {
+                    'LOSS_VALUE': float(loss_value),
+                    'LOSS_1': float(loss1),
+                    'LOSS_2': float(loss2),
+                    'LOSS_3': float(loss3),
+                    'VALIDATION_LOSS_VALUE': float(val_loss_value),
+                    'DURATION': float(duration),
+                    'STEP': int(iter),
+                    'EPOCH': int(epoch),
+                }
+                train_info.append(log)
+                print(
+                    'epoch {:d} step {:d} \t total loss = {:.3f}, sub4 = {:.3f}, sub24 = {:.3f}, sub124 = {:.3f}, val_loss: {:.3f} ({:.3f} sec/step)'. \
+                        format(epoch, iter, loss_value, loss1, loss2, loss3, val_loss_value, duration))
+            if (epoch + 1) % cfg.SAVE_PRED_EVERY == 0:
+                train_net.save(saver, cfg.SNAPSHOT_DIR, epoch)
 
-            else:
-                loss_value, loss1, loss2, loss3, val_loss_value, _ = train_net.sess.run(
-                    [reduced_loss, loss_sub4, loss_sub24, loss_sub124, val_reduced_loss, train_op], feed_dict=feed_dict)
-                # print(label)
-            duration = time.time() - start_time
-            log = {
-                'LOSS_VALUE': float(loss_value),
-                'LOSS_1': float(loss1),
-                'LOSS_2': float(loss2),
-                'LOSS_3': float(loss3),
-                'VALIDATION_LOSS_VALUE': float(val_loss_value),
-                'DURATION': float(duration),
-                'STEP': float(step),
-            }
-            train_info.append(log)
-            print(
-                'step {:d} \t total loss = {:.3f}, sub4 = {:.3f}, sub24 = {:.3f}, sub124 = {:.3f}, val_loss: {:.3f} ({:.3f} sec/step)'. \
-                format(step, loss_value, loss1, loss2, loss3, val_loss_value, duration))
     except KeyboardInterrupt:
         Config.save_to_json(dict=train_info, path=cfg.SNAPSHOT_DIR, file_name='loss.json')
         print("loss.json was saved at %s" % cfg.SNAPSHOT_DIR)
@@ -283,5 +283,6 @@ if __name__ == '__main__':
         [0.16, 0.4, 0.8],
     ]
 
-    for lamd in lambda_list:
-        main(lambda_list=lamd, log_path_end='DEFAULT_CONFIG_LOSS_LAMBDA_%f_%f_%f' % (lamd[0], lamd[1], lamd[2]))
+    # for lamd in lambda_list:
+    #     main(lambda_list=lamd, log_path_end='DEFAULT_CONFIG_LOSS_LAMBDA_%f_%f_%f' % (lamd[0], lamd[1], lamd[2]))
+    main()
