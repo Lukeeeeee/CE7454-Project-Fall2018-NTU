@@ -111,11 +111,14 @@ model/*
 !model/README.md
 
 #log/
+log/**/*.png
 log/model*
 log/**/model*
 log/2018*/eval_img/*
+log/**/eval_img/*
 log/2018*/eval_compare/*
-!log/**/checkpoint
+log/**/eval_compare/*
+!log**/checkpoint
 !log/**/config.json
 !log/**/eval.json
 !log/**/loss.json
