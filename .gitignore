@@ -110,13 +110,21 @@ model/*
 !model/*.py
 !model/README.md
 
-log/
+#log/
+log/model*
+log/**/model*
 log/2018*/eval_img/*
-snapshots/
-!data/__init__.py
+log/2018*/eval_compare/*
+!log/**/checkpoint
+!log/**/config.json
+!log/**/eval.json
+!log/**/loss.json
 !log/**/*.py
 !log/model
 !log/*.py
+
+snapshots/
+!data/__init__.py
 
 .idea/
 data/*
