@@ -69,7 +69,7 @@ def main(model_log_dir, check_point):
                  filter_scale=args.filter_scale,
                  eval_path_log=os.path.join(LOG_PATH, model_log_dir))
     cfg.model_paths['others'] = os.path.join(LOG_PATH, model_log_dir, 'model.ckpt-%d' % check_point)
-    cfg.display()
+    # cfg.display()
     model = model_config[args.model]
 
     reader = ImageReader(cfg=cfg, mode='eval')
