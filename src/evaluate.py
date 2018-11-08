@@ -67,7 +67,7 @@ def main(model_log_dir, check_point):
                  filter_scale=args.filter_scale,
                  eval_path_log=os.path.join(LOG_PATH, model_log_dir))
     cfg.model_paths['others'] = os.path.join(LOG_PATH, model_log_dir, 'model.ckpt-%d' % check_point)
-    cfg.display()
+    #cfg.display()
     model = model_config[args.model]
 
     reader = ImageReader(cfg=cfg, mode='eval')
@@ -103,26 +103,25 @@ def main(model_log_dir, check_point):
     #vis_im1 = np.concatenate([im1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
 
     # results1=results1[0][:,:,0]*255
-    # plt.subplot(131)
-    # plt.imshow(im1)
-    # plt.subplot(132)
-    # plt.imshow(im2, cmap='gray')
-    # plt.subplot(133)
-    # plt.imshow(results1, cmap='gray')
-    #
-    # plt.show()
 
+    duration=0
     for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
+        start=time.time()
         _, res, input,labels,out = net.sess.run([update_op, pred, net.images,net.labels,net.output])
-        save_pred_to_image(res=res,
-                           shape=cfg.param['eval_size'],
-                           save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
-                           save_name='eval_%d_img.png' % i)
+        end=time.time()
 
-        if i %10==0:
+        duration+=(end-start)
+        if i % 100==0:
+
+            save_pred_to_image(res=res,
+                               shape=cfg.param['eval_size'],
+                               save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
+                               save_name='eval_%d_img.png' % i)
+
+        if i %100==0:
 
             input=np.squeeze(input)
-            n_input=_extract_mean_revert(input,IMG_MEAN,swap_channel=True)
+            n_input=_extract_mean_revert(input,IMG_MEAN,swap_channel=False)
             n_input=n_input.astype(np.uint8)
             input_image=Image.fromarray(n_input,'RGB')
 
@@ -148,8 +147,7 @@ def main(model_log_dir, check_point):
             plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
 
     final_mIou = net.sess.run(mIoU)
-
-    print('mIoU: {}'.format(final_mIou))
+    print('total time:{} mean inference time:{} mIoU: {}'.format(duration,duration/cfg.param['eval_steps'],final_mIou))
 
     Config.save_to_json(dict={'FINAL_MIOU': float(final_mIou), "EVAL_STEPS": cfg.param['eval_steps']},
                         path=os.path.dirname(cfg.model_paths['others']),
@@ -159,4 +157,4 @@ def main(model_log_dir, check_point):
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    main(model_log_dir='2018-11-07_03-38-36_DEFAULT_CONFIG_LOSS_LAMBDA_0.160000_0.400000_0.800000', check_point=4999)
+    main(model_log_dir='2018-11-08_13-21-26_', check_point=19)
