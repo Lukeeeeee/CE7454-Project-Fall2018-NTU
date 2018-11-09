@@ -1,0 +1,59 @@
+{
+  "ADE20K_DATA_DIR": "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/data/ADEChallengeData2016",
+  "ADE20K_eval_list": "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/data/list/ade20k_val_list.txt",
+  "ADE20K_train_list": "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/data/list/ade20k_train_list.txt",
+  "BATCH_SIZE": 16,
+  "CITYSCAPES_DATA_DIR": "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/data/cityscapes_dataset/cityscape",
+  "CITYSCAPES_eval_list": "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/data/list/cityscapes_val_list.txt",
+  "CITYSCAPES_train_list": "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/data/list/cityscapes_train_list.txt",
+  "IMG_MEAN": [
+    177.6820068359375,
+    175.83999633789062,
+    174.2100067138672
+  ],
+  "INFER_SIZE": [
+    1280,
+    1918,
+    3
+  ],
+  "Kaggle_DATA_DIR": "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/data",
+  "Kaggle_eval_list": "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/data/list/valid.txt",
+  "Kaggle_train_list": "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/data/list/train.txt",
+  "LAMBDA1": 0.16,
+  "LAMBDA2": 0.4,
+  "LAMBDA3": 1.0,
+  "LEARNING_RATE": 0.001,
+  "MOMENTUM": 0.9,
+  "N_WORKERS": 8,
+  "POWER": 0.9,
+  "RANDOM_SEED": 1844860492,
+  "SAVE_NUM_IMAGES": 4,
+  "SAVE_PRED_EVERY": 2,
+  "SNAPSHOT_DIR": "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/log/2018-11-08_14-46-49__v2_DEFAULT_CONFIG_LR_0.001000",
+  "TRAINING_EPOCHS": 20,
+  "TRAINING_SIZE": [
+    720,
+    720
+  ],
+  "WEIGHT_DECAY": 0.0001,
+  "data_dir": "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/data",
+  "dataset": "others",
+  "eval_list": "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/data/list/valid.txt",
+  "eval_size": [
+    1280,
+    1918
+  ],
+  "eval_steps": 500,
+  "filter_scale": 1,
+  "ignore_label": 100,
+  "is_training": true,
+  "loss_type": "cross_entropy",
+  "model_weight": "../model/cityscapes/icnet_cityscapes_train_30k_bnnomerge.npy",
+  "name": "Kaggle",
+  "num_classes": 2,
+  "random_mirror": false,
+  "random_scale": false,
+  "total_eval_sample": 1024,
+  "total_train_sample": 4064,
+  "train_list": "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/data/list/train.txt"
+}
