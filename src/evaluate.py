@@ -2,7 +2,7 @@ import argparse
 
 import tensorflow as tf
 from tqdm import trange
-
+from utils.image_reader import _image_mirroring,_random_crop_and_pad_image_and_labels,_image_scaling
 from utils.config import Config
 from utils.image_reader import ImageReader
 from src.model import ICNet, ICNet_BN
@@ -111,12 +111,12 @@ def main(model_log_dir, check_point):
         end=time.time()
 
         duration+=(end-start)
-        if i % 100==0:
-
-            save_pred_to_image(res=res,
-                               shape=cfg.param['eval_size'],
-                               save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
-                               save_name='eval_%d_img.png' % i)
+        # if i % 100==0:
+        #
+        #     save_pred_to_image(res=res,
+        #                        shape=cfg.param['eval_size'],
+        #                        save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
+        #                        save_name='eval_%d_img.png' % i)
 
         if i %100==0:
 
@@ -130,6 +130,12 @@ def main(model_log_dir, check_point):
             labels = np.squeeze(labels)* 255
             labels= Image.fromarray(labels.astype(np.uint8))
             fig, ax1 = plt.subplots(figsize=(58, 13))
+
+            input_image,labels=_image_mirroring(input_image,labels)
+            
+            labels= Image.fromarray(labels.astype(np.uint8))
+            input_image= Image.fromarray(input_image.astype(np.uint8))
+
             plt.subplot(131)
             plt.imshow(input_image)
             plt.axis('off')
@@ -141,10 +147,12 @@ def main(model_log_dir, check_point):
             plt.subplot(133)
             plt.imshow(res, cmap='gray')
             plt.axis('off')
-            save_comparation_path=os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
-            if os.path.exists(save_comparation_path) is False:
-                os.mkdir(save_comparation_path)
-            plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
+
+            plt.show()
+            # save_comparation_path=os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
+            # if os.path.exists(save_comparation_path) is False:
+            #     os.mkdir(save_comparation_path)
+            # plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
 
     final_mIou = net.sess.run(mIoU)
     print('total time:{} mean inference time:{} mIoU: {}'.format(duration,duration/cfg.param['eval_steps'],final_mIou))
@@ -157,4 +165,4 @@ def main(model_log_dir, check_point):
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    main(model_log_dir='2018-11-08_13-21-26_', check_point=19)
+    main(model_log_dir='2018-11-08_13-21-26_restore_nonaug', check_point=19)
