@@ -33,14 +33,14 @@ def _extract_mean_revert(img, img_mean, swap_channel=False):
     img += img_mean
     if swap_channel:
         img_b = img[:, :, 0]
-        img_r = img[:, :, 1]
-        img_g = img[:, :, 2]
+        img_g = img[:, :, 1]
+        img_r = img[:, :, 2]
 
         img_b = img_b[:, :, np.newaxis]
         img_r = img_r[:, :, np.newaxis]
         img_g = img_g[:, :, np.newaxis]
 
-        img = np.concatenate((img_b, img_r, img_g), axis=2)
+        img = np.concatenate((img_r, img_g, img_b), axis=2)
 
     return img
 
@@ -121,16 +121,8 @@ def main(model_log_dir, check_point):
         #                        save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
         #                        save_name='eval_%d_img.png' % i)
 
-        if i %100==0:
 
-            input=np.squeeze(input)
-            n_input=_extract_mean_revert(input,IMG_MEAN,swap_channel=False)
-            n_input=n_input.astype(np.uint8)
-            input_image=Image.fromarray(n_input,'RGB')
-
-        _, res, input, labels, out = net.sess.run([update_op, pred, net.images, net.labels, net.output])
-
-        if i % 50 == 0:
+        if i % 100 == 0:
 
             save_pred_to_image(res=res,
                                shape=cfg.param['eval_size'],
@@ -149,10 +141,7 @@ def main(model_log_dir, check_point):
             labels = Image.fromarray(labels.astype(np.uint8))
             fig, ax1 = plt.subplots(figsize=(58, 13))
 
-            input_image,labels=_image_mirroring(input_image,labels)
-            
-            labels= Image.fromarray(labels.astype(np.uint8))
-            input_image= Image.fromarray(input_image.astype(np.uint8))
+
 
             plt.subplot(131)
             plt.imshow(input_image)
@@ -170,14 +159,7 @@ def main(model_log_dir, check_point):
             if os.path.exists(save_comparation_path) is False:
                 os.mkdir(save_comparation_path)
             plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
-            plt.close()
 
-
-            plt.show()
-            # save_comparation_path=os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
-            # if os.path.exists(save_comparation_path) is False:
-            #     os.mkdir(save_comparation_path)
-            # plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
 
     final_mIou = net.sess.run(mIoU)
     print('total time:{} mean inference time:{} mIoU: {}'.format(duration,duration/cfg.param['eval_steps'],final_mIou))
@@ -189,6 +171,6 @@ def main(model_log_dir, check_point):
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
     main(model_log_dir='2018-11-08_13-21-26_restore_nonaug', check_point=19)
 
