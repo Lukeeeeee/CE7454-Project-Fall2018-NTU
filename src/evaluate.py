@@ -22,6 +22,8 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from tqdm import trange
 from utils.config import Config
+from test.TernausNet import Example
+import torch
 
 # mapping different model
 model_config = {'train': ICNet, 'trainval': ICNet, 'train_bn': ICNet_BN, 'trainval_bn': ICNet_BN, 'others': ICNet_BN}
@@ -139,21 +141,32 @@ def main(model_log_dir, check_point):
             res = Image.fromarray(res.astype(np.uint8))
             labels = np.squeeze(labels) * 255
             labels = Image.fromarray(labels.astype(np.uint8))
-            fig, ax1 = plt.subplots(figsize=(58, 13))
+            fig, ax1 = plt.subplots(figsize=(80, 13))
 
+            tnet=Example.ternauNet(n_input)
 
-
-            plt.subplot(131)
+            plot1=plt.subplot(141)
+            plot1.set_title("Input Image",fontsize=50)
             plt.imshow(input_image)
             plt.axis('off')
 
-            plt.subplot(132)
+            plot2=plt.subplot(142)
+            plot2.set_title("Ground Truth Mask",fontsize=50)
             plt.imshow(labels, cmap='gray')
             plt.axis('off')
 
-            plt.subplot(133)
+            plot3=plt.subplot(143)
+            plot3.set_title("Our Result",fontsize=50)
             plt.imshow(res, cmap='gray')
             plt.axis('off')
+
+            plot4=plt.subplot(144)
+            plot4.set_title("TernausNet's Result",fontsize=50)
+            plt.imshow(tnet, cmap='gray')
+            plt.axis('off')
+
+
+            #plt.show()
 
             save_comparation_path = os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
             if os.path.exists(save_comparation_path) is False:
@@ -172,5 +185,6 @@ def main(model_log_dir, check_point):
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+
     main(model_log_dir='2018-11-08_13-21-26_restore_nonaug', check_point=19)
 
