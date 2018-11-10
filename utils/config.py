@@ -65,7 +65,7 @@ class Config(object):
                     'eval_steps': 1024,
                     'eval_list': Kaggle_eval_list,
                     'train_list': Kaggle_train_list,
-                    'loss_type': 'cross_entropy',
+                    'loss_type': 'BCE+DICE',
                     'total_train_sample': 4064,
                     'total_eval_sample': 1024,
                     'data_dir': Kaggle_DATA_DIR}

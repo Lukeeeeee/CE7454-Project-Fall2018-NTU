@@ -2,7 +2,7 @@ import argparse
 
 import tensorflow as tf
 from tqdm import trange
-
+from utils.image_reader import _image_mirroring,_random_crop_and_pad_image_and_labels,_image_scaling
 from utils.config import Config
 from utils.image_reader import ImageReader
 from src.model import ICNet, ICNet_BN
@@ -33,14 +33,14 @@ def _extract_mean_revert(img, img_mean, swap_channel=False):
     img += img_mean
     if swap_channel:
         img_b = img[:, :, 0]
-        img_r = img[:, :, 1]
-        img_g = img[:, :, 2]
+        img_g = img[:, :, 1]
+        img_r = img[:, :, 2]
 
         img_b = img_b[:, :, np.newaxis]
         img_r = img_r[:, :, np.newaxis]
         img_g = img_g[:, :, np.newaxis]
 
-        img = np.concatenate((img_b, img_r, img_g), axis=2)
+        img = np.concatenate((img_r, img_g, img_b), axis=2)
 
     return img
 
@@ -69,7 +69,7 @@ def main(model_log_dir, check_point):
                  filter_scale=args.filter_scale,
                  eval_path_log=os.path.join(LOG_PATH, model_log_dir))
     cfg.model_paths['others'] = os.path.join(LOG_PATH, model_log_dir, 'model.ckpt-%d' % check_point)
-    # cfg.display()
+
     model = model_config[args.model]
 
     reader = ImageReader(cfg=cfg, mode='eval')
@@ -105,19 +105,24 @@ def main(model_log_dir, check_point):
     # vis_im1 = np.concatenate([im1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
 
     # results1=results1[0][:,:,0]*255
-    # plt.subplot(131)
-    # plt.imshow(im1)
-    # plt.subplot(132)
-    # plt.imshow(im2, cmap='gray')
-    # plt.subplot(133)
-    # plt.imshow(results1, cmap='gray')
-    #
-    # plt.show()
 
+    duration=0
     for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
-        _, res, input, labels, out = net.sess.run([update_op, pred, net.images, net.labels, net.output])
 
-        if i % 50 == 0:
+        start=time.time()
+        _, res, input,labels,out = net.sess.run([update_op, pred, net.images,net.labels,net.output])
+        end=time.time()
+
+        duration+=(end-start)
+        # if i % 100==0:
+        #
+        #     save_pred_to_image(res=res,
+        #                        shape=cfg.param['eval_size'],
+        #                        save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
+        #                        save_name='eval_%d_img.png' % i)
+
+
+        if i % 100 == 0:
 
             save_pred_to_image(res=res,
                                shape=cfg.param['eval_size'],
@@ -129,11 +134,15 @@ def main(model_log_dir, check_point):
             n_input = n_input.astype(np.uint8)
             input_image = Image.fromarray(n_input, 'RGB')
 
+
             res = np.array(np.reshape(res, cfg.param['eval_size']), dtype=np.uint8) * 255
             res = Image.fromarray(res.astype(np.uint8))
             labels = np.squeeze(labels) * 255
             labels = Image.fromarray(labels.astype(np.uint8))
             fig, ax1 = plt.subplots(figsize=(58, 13))
+
+
+
             plt.subplot(131)
             plt.imshow(input_image)
             plt.axis('off')
@@ -145,15 +154,15 @@ def main(model_log_dir, check_point):
             plt.subplot(133)
             plt.imshow(res, cmap='gray')
             plt.axis('off')
+
             save_comparation_path = os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
             if os.path.exists(save_comparation_path) is False:
                 os.mkdir(save_comparation_path)
             plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
-            plt.close()
+
 
     final_mIou = net.sess.run(mIoU)
-
-    print('mIoU: {}'.format(final_mIou))
+    print('total time:{} mean inference time:{} mIoU: {}'.format(duration,duration/cfg.param['eval_steps'],final_mIou))
 
     Config.save_to_json(dict={'FINAL_MIOU': float(final_mIou), "EVAL_STEPS": cfg.param['eval_steps']},
                         path=os.path.dirname(cfg.model_paths['others']),
@@ -162,5 +171,6 @@ def main(model_log_dir, check_point):
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    main(model_log_dir='', check_point=19)
+    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    main(model_log_dir='2018-11-08_13-21-26_restore_nonaug', check_point=19)
+
