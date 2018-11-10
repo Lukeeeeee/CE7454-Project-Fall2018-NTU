@@ -86,6 +86,8 @@ def main(model_log_dir, check_point):
     gt = tf.cast(tf.gather(label_flatten, indices), tf.int32)
     pred = tf.gather(pred_flatten, indices)
 
+    net.create_session()
+    net.restore(cfg.model_paths[args.model])
     if cfg.dataset == 'ade20k':
         pred = tf.add(pred, tf.constant(1, dtype=tf.int64))
         mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'] + 1)
@@ -93,9 +95,6 @@ def main(model_log_dir, check_point):
         mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
     elif cfg.dataset == 'others':
         mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
-
-    net.create_session()
-    net.restore(cfg.model_paths[args.model])
 
     # im1 = cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/data/0cdf5b5d0ce1_05.jpg')
     # im2=cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/mask/0cdf5b5d0ce1_05_mask.png',cv2.IMREAD_GRAYSCALE)
@@ -112,38 +111,45 @@ def main(model_log_dir, check_point):
     for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
 
         start=time.time()
-        _, res, input,labels,out = net.sess.run([update_op, pred, net.images,net.labels,net.output])
+        res, input,labels,out = net.sess.run([pred, net.images,net.labels,net.output])
         end=time.time()
 
         duration+=(end-start)
         # if i % 100==0:
         #
         #     save_pred_to_image(res=res,
-        #                        shape=cfg.param['eval_size'],
+        #                          shape=cfg.param['eval_size'],
         #                        save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
         #                        save_name='eval_%d_img.png' % i)
+        input = np.squeeze(input)
+        n_input = _extract_mean_revert(input, IMG_MEAN, swap_channel=True)
+        n_input = n_input.astype(np.uint8)
+        input_image = Image.fromarray(n_input, 'RGB')
 
+        '''tnet -> tnet's predict either 0 1'''
+        res2,tnet_mask = Example.ternauNet(n_input)
+        tnet = Image.fromarray((tnet_mask * 255).astype(np.uint8))
+        res2 = np.reshape(res2, [-1])
+
+        ensemble = 0.4 * res + 0.6*res2
+        ensemble[ensemble >= 0.5] = 1
+        ensemble[ensemble < 0.5] = 0
 
         if i % 100 == 0:
 
-            save_pred_to_image(res=res,
-                               shape=cfg.param['eval_size'],
-                               save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
-                               save_name='eval_%d_img.png' % i)
-
-            input = np.squeeze(input)
-            n_input = _extract_mean_revert(input, IMG_MEAN, swap_channel=True)
-            n_input = n_input.astype(np.uint8)
-            input_image = Image.fromarray(n_input, 'RGB')
+            # save_pred_to_image(res=res,
+            #                    shape=cfg.param['eval_size'],
+            #                    save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
+            #                    save_name='eval_%d_img.png' % i)
 
 
-            res = np.array(np.reshape(res, cfg.param['eval_size']), dtype=np.uint8) * 255
-            res = Image.fromarray(res.astype(np.uint8))
+
+            '''res-> network predict either 0 or 1 on each element '''
+            icnet = np.array(np.reshape(res, cfg.param['eval_size']), dtype=np.uint8) * 255
+            icnet = Image.fromarray(icnet.astype(np.uint8))
             labels = np.squeeze(labels) * 255
             labels = Image.fromarray(labels.astype(np.uint8))
             fig, ax1 = plt.subplots(figsize=(80, 13))
-
-            tnet=Example.ternauNet(n_input)
 
             plot1=plt.subplot(141)
             plot1.set_title("Input Image",fontsize=50)
@@ -157,7 +163,7 @@ def main(model_log_dir, check_point):
 
             plot3=plt.subplot(143)
             plot3.set_title("Our Result",fontsize=50)
-            plt.imshow(res, cmap='gray')
+            plt.imshow(icnet, cmap='gray')
             plt.axis('off')
 
             plot4=plt.subplot(144)
@@ -166,12 +172,19 @@ def main(model_log_dir, check_point):
             plt.axis('off')
 
 
-            #plt.show()
+            plt.show()
 
-            save_comparation_path = os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
-            if os.path.exists(save_comparation_path) is False:
-                os.mkdir(save_comparation_path)
-            plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
+
+
+
+            # save_comparation_path = os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
+            # if os.path.exists(save_comparation_path) is False:
+            #     os.mkdir(save_comparation_path)
+            # plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
+
+
+
+
 
 
     final_mIou = net.sess.run(mIoU)
@@ -184,7 +197,7 @@ def main(model_log_dir, check_point):
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    #os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
     main(model_log_dir='2018-11-08_13-21-26_restore_nonaug', check_point=19)
 

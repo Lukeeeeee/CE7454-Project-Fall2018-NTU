@@ -133,14 +133,15 @@ def submit():
 
 def ternauNet(img):
 
+    torch.cuda.set_device(1)
     img_transform = Compose([
         ToTensor(),
         Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
-    device = torch.device("cpu")
+
     model = unet11(pretrained='carvana')
     model.eval()
-    model = model.to(device)
+    #model = model.to(device)
 
     r, g, b = cv2.split(img)
     img_bgr = cv2.merge([b, g, r])
@@ -148,19 +149,20 @@ def ternauNet(img):
     img_bgr, pads = load_image(img_bgr, pad=True)
 
     with torch.no_grad():
-        input_img = torch.unsqueeze(img_transform(img_bgr).to(device), dim=0)
+        input_img = torch.unsqueeze(img_transform(img_bgr), dim=0)
         mask = F.sigmoid(model(input_img))
 
 
     mask_array = mask.data[0].cpu().numpy()[0]
 
     mask_array = crop_image(mask_array, pads)
-    mask_array[mask_array > 0.5] = 1
-    mask_array[mask_array <= 0.5] = 0
+    mask=mask_array.copy()
 
-    # plt.imshow(mask_array, cmap='gray')
-    # plt.show()
-    return mask_array
+    mask[mask > 0.5] = 1
+    mask[mask <= 0.5] = 0
+
+
+    return mask_array,mask
 
 
 
