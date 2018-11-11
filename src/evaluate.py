@@ -116,6 +116,7 @@ def main(model_log_dir, check_point):
 
     duration = 0
     model = Example.get_model()
+
     for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
         start = time.time()
         _, res, input, labels, out, icnet_logit = net.sess.run(
@@ -140,10 +141,14 @@ def main(model_log_dir, check_point):
         tnet = Image.fromarray((tnet_mask * 255).astype(np.uint8))
         res2 = np.reshape(res2, [-1])
 
+        icnet_logit = np.squeeze(icnet_logit)[:, :, 1]
+        icnet_logit = np.reshape(icnet_logit, [-1])
+
         # TODO fix the ensemble problem: ensemble the output of softmax, not the argmax
-        # ensemble = 0.4 * res + 0.6 * res2
-        # ensemble[ensemble >= 0.5] = 1
-        # ensemble[ensemble < 0.5] = 0
+
+        ensemble = 0.4 * icnet_logit + 0.6 * res2
+        ensemble[ensemble >= 0.5] = 1
+        ensemble[ensemble < 0.5] = 0
 
         # if i % 100 == 0:
         #     # save_pred_to_image(res=res,

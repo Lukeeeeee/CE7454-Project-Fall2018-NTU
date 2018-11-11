@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 
 def get_model():
-    torch.cuda.set_device(0)
+    # torch.cuda.set_device(0)
     model = unet11(pretrained='carvana')
     model.eval()
     return model
@@ -139,7 +139,7 @@ def ternauNet(img, model):
         ToTensor(),
         Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
-
+    # TODO instead of load model every time, pass the model into as an argument.
     # model = unet11(pretrained='carvana')
     # model.eval()
     # model = model.to(device)
