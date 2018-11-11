@@ -125,72 +125,67 @@ def main(model_log_dir, check_point):
 
         duration += (end - start)
 
-        # if i % 100==0:
-        #
-        #     save_pred_to_image(res=res,
-        #                          shape=cfg.param['eval_size'],
-        #                        save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
-        #                        save_name='eval_%d_img.png' % i)
-        input = np.squeeze(input)
-        n_input = _extract_mean_revert(input, IMG_MEAN, swap_channel=True)
-        n_input = n_input.astype(np.uint8)
-        input_image = Image.fromarray(n_input, 'RGB')
+        if i % 100 == 0:
+            # save_pred_to_image(res=res,
+            #                    shape=cfg.param['eval_size'],
+            #                    save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
+            #                    save_name='eval_%d_img.png' % i)
 
-        '''tnet -> tnet's predict either 0 1'''
-        res2, tnet_mask = Example.ternauNet(n_input, model)
-        tnet = Image.fromarray((tnet_mask * 255).astype(np.uint8))
-        res2 = np.reshape(res2, [-1])
+            input = np.squeeze(input)
+            n_input = _extract_mean_revert(input, IMG_MEAN, swap_channel=True)
+            n_input = n_input.astype(np.uint8)
+            input_image = Image.fromarray(n_input, 'RGB')
 
-        icnet_logit = np.squeeze(icnet_logit)[:, :, 1]
-        icnet_logit = np.reshape(icnet_logit, [-1])
+            '''tnet -> tnet's predict either 0 1'''
+            res2, tnet_mask = Example.ternauNet(n_input, model)
+            tnet = Image.fromarray((tnet_mask * 255).astype(np.uint8))
 
-        # TODO fix the ensemble problem: ensemble the output of softmax, not the argmax
+            res2 = np.reshape(res2, [-1])
+            icnet_logit = np.squeeze(icnet_logit)[:, :, 1]
+            icnet_logit = np.reshape(icnet_logit, [-1])
 
-        ensemble = 0.4 * icnet_logit + 0.6 * res2
-        ensemble[ensemble >= 0.5] = 1
-        ensemble[ensemble < 0.5] = 0
+            # TODO fix the ensemble problem: ensemble the output of softmax, not the argmax: fixed!
+            ensemble = 0.4 * icnet_logit + 0.6 * res2
+            ensemble[ensemble >= 0.5] = 1
+            ensemble[ensemble < 0.5] = 0
+            ensemble = np.array(np.reshape(ensemble, cfg.param['eval_size']), dtype=np.uint8) * 255
+            ensemble_fig = Image.fromarray(ensemble.astype(np.uint8))
+            # TODO save the ensemble result into picture: fixed!
 
-        # if i % 100 == 0:
-        #     # save_pred_to_image(res=res,
-        #     #                    shape=cfg.param['eval_size'],
-        #     #                    save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
-        #     #                    save_name='eval_%d_img.png' % i)
-        #
-        #     '''res-> network predict either 0 or 1 on each element '''
-        #     icnet = np.array(np.reshape(res, cfg.param['eval_size']), dtype=np.uint8) * 255
-        #     icnet = Image.fromarray(icnet.astype(np.uint8))
-        #     labels = np.squeeze(labels) * 255
-        #     labels = Image.fromarray(labels.astype(np.uint8))
-        #     fig, ax1 = plt.subplots(figsize=(80, 13))
-        #
-        #     plot1 = plt.subplot(141)
-        #     plot1.set_title("Input Image", fontsize=50)
-        #     plt.imshow(input_image)
-        #     plt.axis('off')
-        #
-        #     plot2 = plt.subplot(142)
-        #     plot2.set_title("Ground Truth Mask", fontsize=50)
-        #     plt.imshow(labels, cmap='gray')
-        #     plt.axis('off')
-        #
-        #     plot3 = plt.subplot(143)
-        #     plot3.set_title("Our Result", fontsize=50)
-        #     plt.imshow(icnet, cmap='gray')
-        #     plt.axis('off')
-        #
-        #     plot4 = plt.subplot(144)
-        #     plot4.set_title("TernausNet's Result", fontsize=50)
-        #     plt.imshow(tnet, cmap='gray')
-        #     plt.axis('off')
-        #
-        #     plt.show()
+            '''res-> network predict either 0 or 1 on each element '''
+            icnet = np.array(np.reshape(res, cfg.param['eval_size']), dtype=np.uint8) * 255
+            icnet = Image.fromarray(icnet.astype(np.uint8))
+            labels = np.squeeze(labels) * 255
+            labels = Image.fromarray(labels.astype(np.uint8))
+            fig, ax1 = plt.subplots(figsize=(20, 12))
 
-        # save_comparation_path = os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
-        # if os.path.exists(save_comparation_path) is False:
-        #     os.mkdir(save_comparation_path)
-        # plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
+            plot1 = plt.subplot(141)
+            plot1.set_title("Input Image", fontsize=4)
+            plt.imshow(input_image)
+            plt.axis('off')
 
-    # TODO fix the mIou which take the ensemble as output
+            plot2 = plt.subplot(142)
+            plot2.set_title("Ground Truth Mask", fontsize=4)
+            plt.imshow(labels, cmap='gray')
+            plt.axis('off')
+
+            plot3 = plt.subplot(143)
+            plot3.set_title("Our Result", fontsize=4)
+            plt.imshow(icnet, cmap='gray')
+            plt.axis('off')
+
+            plot4 = plt.subplot(144)
+            plot4.set_title("Ensemble's Result", fontsize=4)
+            plt.imshow(ensemble_fig, cmap='gray')
+            plt.axis('off')
+
+            save_comparation_path = os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
+            if os.path.exists(save_comparation_path) is False:
+                os.mkdir(save_comparation_path)
+            plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
+            plt.show()
+
+    # TODO fix the mIou which take the ensemble as output: not done yet!
     final_mIou = net.sess.run(mIoU)
     # ensemble_final_mIou = net.sess.run(ensemble_mIoU)
     ensemble_final_mIou = -1.0
