@@ -1,4 +1,3 @@
-
 import cv2
 import os
 import torch
@@ -12,10 +11,15 @@ import numpy as np
 from time import time
 
 import matplotlib.pyplot as plt
+
+
 def get_model():
+    torch.cuda.set_device(0)
     model = unet11(pretrained='carvana')
     model.eval()
-    return model.to(device)
+    return model
+    # return model.to(device)
+
 
 def mask_overlay(image, mask, color=(0, 255, 0)):
     """
@@ -52,9 +56,9 @@ def load_image(path, pad=True):
     else:
         returns image as numpy.array
     """
-    #img = cv2.imread(str(path))
-    #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img=path
+    # img = cv2.imread(str(path))
+    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = path
     if not pad:
         return img
 
@@ -108,9 +112,7 @@ def submit():
     with open('SUBMISSION.csv', 'a') as f:
         f.write('img,rle_mask\n')
         for index, i in enumerate(os.listdir(dir)):
-
-
-            #img = Image.open(dir + i)
+            # img = Image.open(dir + i)
             img, pads = load_image(dir + i, pad=True)
             start = time()
             with torch.no_grad():
@@ -124,24 +126,23 @@ def submit():
             mask_array[mask_array > 0.5] = 1
             mask_array[mask_array <= 0.5] = 0
 
-            plt.imshow(mask_array,cmap='gray')
+            plt.imshow(mask_array, cmap='gray')
             plt.show()
 
             en = run_length_encode(mask_array)
-            print('{}/{} cost{}s'.format(index, N,str(stop-start)))
-            #f.write('{},{}\n'.format(i, en))
+            print('{}/{} cost{}s'.format(index, N, str(stop - start)))
+            # f.write('{},{}\n'.format(i, en))
 
-def ternauNet(img):
 
-    torch.cuda.set_device(1)
+def ternauNet(img, model):
     img_transform = Compose([
         ToTensor(),
         Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
-    model = unet11(pretrained='carvana')
-    model.eval()
-    #model = model.to(device)
+    # model = unet11(pretrained='carvana')
+    # model.eval()
+    # model = model.to(device)
 
     r, g, b = cv2.split(img)
     img_bgr = cv2.merge([b, g, r])
@@ -152,22 +153,19 @@ def ternauNet(img):
         input_img = torch.unsqueeze(img_transform(img_bgr), dim=0)
         mask = F.sigmoid(model(input_img))
 
-
     mask_array = mask.data[0].cpu().numpy()[0]
 
     mask_array = crop_image(mask_array, pads)
-    mask=mask_array.copy()
+    mask = mask_array.copy()
 
     mask[mask > 0.5] = 1
     mask[mask <= 0.5] = 0
 
-
-    return mask_array,mask
-
+    return mask_array, mask
 
 
 if __name__ == '__main__':
-    #net = UNet(3, 1).cuda()
-    #net.load_state_dict(torch.load('MODEL.pth'))
+    # net = UNet(3, 1).cuda()
+    # net.load_state_dict(torch.load('MODEL.pth'))
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     submit()

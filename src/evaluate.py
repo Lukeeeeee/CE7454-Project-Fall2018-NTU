@@ -2,7 +2,7 @@ import argparse
 
 import tensorflow as tf
 from tqdm import trange
-from utils.image_reader import _image_mirroring,_random_crop_and_pad_image_and_labels,_image_scaling
+from utils.image_reader import _image_mirroring, _random_crop_and_pad_image_and_labels, _image_scaling
 from utils.config import Config
 from utils.image_reader import ImageReader
 from src.model import ICNet, ICNet_BN
@@ -86,8 +86,10 @@ def main(model_log_dir, check_point):
     gt = tf.cast(tf.gather(label_flatten, indices), tf.int32)
     pred = tf.gather(pred_flatten, indices)
 
-    net.create_session()
-    net.restore(cfg.model_paths[args.model])
+    # weight_list = [0.4, 0.6]
+    # ensemble_input = tf.placeholder(dtype=pred.dtype, shape=pred.shape(), name='ensemble_input')
+    # ensemble_pred = pred * weight_list[0] + ensemble_input * weight_list[1]
+
     if cfg.dataset == 'ade20k':
         pred = tf.add(pred, tf.constant(1, dtype=tf.int64))
         mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'] + 1)
@@ -95,6 +97,11 @@ def main(model_log_dir, check_point):
         mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
     elif cfg.dataset == 'others':
         mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
+        # ensemble_mIoU, ensemble_update_op = tf.metrics.mean_iou(predictions=ensemble_pred, labels=gt,
+        #                                                         num_classes=cfg.param['num_classes'])
+
+    net.create_session()
+    net.restore(cfg.model_paths[args.model])
 
     # im1 = cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/data/0cdf5b5d0ce1_05.jpg')
     # im2=cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/mask/0cdf5b5d0ce1_05_mask.png',cv2.IMREAD_GRAYSCALE)
@@ -107,14 +114,16 @@ def main(model_log_dir, check_point):
 
     # results1=results1[0][:,:,0]*255
 
-    duration=0
+    duration = 0
+    model = Example.get_model()
     for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
+        start = time.time()
+        _, res, input, labels, out, icnet_logit = net.sess.run(
+            [update_op, pred, net.images, net.labels, net.output, net.logits_up])
+        end = time.time()
 
-        start=time.time()
-        res, input,labels,out = net.sess.run([pred, net.images,net.labels,net.output])
-        end=time.time()
+        duration += (end - start)
 
-        duration+=(end-start)
         # if i % 100==0:
         #
         #     save_pred_to_image(res=res,
@@ -127,77 +136,73 @@ def main(model_log_dir, check_point):
         input_image = Image.fromarray(n_input, 'RGB')
 
         '''tnet -> tnet's predict either 0 1'''
-        res2,tnet_mask = Example.ternauNet(n_input)
+        res2, tnet_mask = Example.ternauNet(n_input, model)
         tnet = Image.fromarray((tnet_mask * 255).astype(np.uint8))
         res2 = np.reshape(res2, [-1])
 
-        ensemble = 0.4 * res + 0.6*res2
-        ensemble[ensemble >= 0.5] = 1
-        ensemble[ensemble < 0.5] = 0
+        # TODO fix the ensemble problem: ensemble the output of softmax, not the argmax
+        # ensemble = 0.4 * res + 0.6 * res2
+        # ensemble[ensemble >= 0.5] = 1
+        # ensemble[ensemble < 0.5] = 0
 
-        if i % 100 == 0:
+        # if i % 100 == 0:
+        #     # save_pred_to_image(res=res,
+        #     #                    shape=cfg.param['eval_size'],
+        #     #                    save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
+        #     #                    save_name='eval_%d_img.png' % i)
+        #
+        #     '''res-> network predict either 0 or 1 on each element '''
+        #     icnet = np.array(np.reshape(res, cfg.param['eval_size']), dtype=np.uint8) * 255
+        #     icnet = Image.fromarray(icnet.astype(np.uint8))
+        #     labels = np.squeeze(labels) * 255
+        #     labels = Image.fromarray(labels.astype(np.uint8))
+        #     fig, ax1 = plt.subplots(figsize=(80, 13))
+        #
+        #     plot1 = plt.subplot(141)
+        #     plot1.set_title("Input Image", fontsize=50)
+        #     plt.imshow(input_image)
+        #     plt.axis('off')
+        #
+        #     plot2 = plt.subplot(142)
+        #     plot2.set_title("Ground Truth Mask", fontsize=50)
+        #     plt.imshow(labels, cmap='gray')
+        #     plt.axis('off')
+        #
+        #     plot3 = plt.subplot(143)
+        #     plot3.set_title("Our Result", fontsize=50)
+        #     plt.imshow(icnet, cmap='gray')
+        #     plt.axis('off')
+        #
+        #     plot4 = plt.subplot(144)
+        #     plot4.set_title("TernausNet's Result", fontsize=50)
+        #     plt.imshow(tnet, cmap='gray')
+        #     plt.axis('off')
+        #
+        #     plt.show()
 
-            # save_pred_to_image(res=res,
-            #                    shape=cfg.param['eval_size'],
-            #                    save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
-            #                    save_name='eval_%d_img.png' % i)
+        # save_comparation_path = os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
+        # if os.path.exists(save_comparation_path) is False:
+        #     os.mkdir(save_comparation_path)
+        # plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
 
-
-
-            '''res-> network predict either 0 or 1 on each element '''
-            icnet = np.array(np.reshape(res, cfg.param['eval_size']), dtype=np.uint8) * 255
-            icnet = Image.fromarray(icnet.astype(np.uint8))
-            labels = np.squeeze(labels) * 255
-            labels = Image.fromarray(labels.astype(np.uint8))
-            fig, ax1 = plt.subplots(figsize=(80, 13))
-
-            plot1=plt.subplot(141)
-            plot1.set_title("Input Image",fontsize=50)
-            plt.imshow(input_image)
-            plt.axis('off')
-
-            plot2=plt.subplot(142)
-            plot2.set_title("Ground Truth Mask",fontsize=50)
-            plt.imshow(labels, cmap='gray')
-            plt.axis('off')
-
-            plot3=plt.subplot(143)
-            plot3.set_title("Our Result",fontsize=50)
-            plt.imshow(icnet, cmap='gray')
-            plt.axis('off')
-
-            plot4=plt.subplot(144)
-            plot4.set_title("TernausNet's Result",fontsize=50)
-            plt.imshow(tnet, cmap='gray')
-            plt.axis('off')
-
-
-            plt.show()
-
-
-
-
-            # save_comparation_path = os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
-            # if os.path.exists(save_comparation_path) is False:
-            #     os.mkdir(save_comparation_path)
-            # plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
-
-
-
-
-
-
+    # TODO fix the mIou which take the ensemble as output
     final_mIou = net.sess.run(mIoU)
-    print('total time:{} mean inference time:{} mIoU: {}'.format(duration,duration/cfg.param['eval_steps'],final_mIou))
+    # ensemble_final_mIou = net.sess.run(ensemble_mIoU)
+    ensemble_final_mIou = -1.0
 
-    Config.save_to_json(dict={'FINAL_MIOU': float(final_mIou), "EVAL_STEPS": cfg.param['eval_steps']},
+    print('total time:{} mean inference time:{} mIoU: {}, ensemble mIoU'.format(duration,
+                                                                                duration / cfg.param['eval_steps'],
+                                                                                final_mIou, ensemble_final_mIou))
+
+    Config.save_to_json(dict={'FINAL_MIOU': float(final_mIou),
+                              "EVAL_STEPS": cfg.param['eval_steps'],
+                              "ENSEMBLE_MIOU": float(ensemble_final_mIou)},
                         path=os.path.dirname(cfg.model_paths['others']),
                         file_name='eval.json')
 
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    #os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
-    main(model_log_dir='2018-11-08_13-21-26_restore_nonaug', check_point=19)
-
+    main(model_log_dir='2018-11-08_10-52-15__v2_DEFAULT_CONFIG_LR_0.000100', check_point=19)
