@@ -140,7 +140,8 @@ class TrainConfig(Config):
 
     # Set pre-trained weights here (You can download weight using `python script/download_weights.py`) 
     # Note that you need to use "bnnomerge" version.
-    model_weight = '../model/cityscapes/icnet_cityscapes_train_30k_bnnomerge.npy'
+    # model_weight = '../model/cityscapes/icnet_cityscapes_train_30k_bnnomerge.npy'
+    model_weight = '/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/log/2018-11-09_21-00-37_v2_DEFAULT_CONFIG_EPOCH_10/model.ckpt-9'
 
     # Set hyperparameters here, you can get much more setting in Config Class, see 'utils/config.py' for details.
     LAMBDA1 = 0.16
@@ -151,7 +152,7 @@ class TrainConfig(Config):
     LEARNING_RATE = 5e-4
 
 
-def main(lr=None, log_path_end='', bs=None, lambda_list=None):
+def main(lr=None, log_path_end='', bs=None, train_epoch=None, lambda_list=None, random_mirror=False, random_scale=False):
     """Create the model and start the training."""
     tf.reset_default_graph()
     args = get_arguments()
@@ -165,8 +166,8 @@ def main(lr=None, log_path_end='', bs=None, lambda_list=None):
     """
     cfg = TrainConfig(dataset=args.dataset,
                       is_training=True,
-                      random_scale=args.random_scale,
-                      random_mirror=args.random_mirror,
+                      random_scale=random_scale,
+                      random_mirror=random_mirror,
                       filter_scale=args.filter_scale,
                       log_path_end=log_path_end)
     if lr:
@@ -178,6 +179,8 @@ def main(lr=None, log_path_end='', bs=None, lambda_list=None):
         cfg.LAMBDA1 = lambda_list[0]
         cfg.LAMBDA2 = lambda_list[1]
         cfg.LAMBDA3 = lambda_list[2]
+    if train_epoch:
+        cfg.TRAINING_EPOCHS = train_epoch
 
     cfg.display()
 
@@ -267,8 +270,8 @@ def main(lr=None, log_path_end='', bs=None, lambda_list=None):
 if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = '1'
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    lr_list = [5e-4, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2]
-    bs_list = [256, 128, 64]
+    lr_list = [5e-4, 1e-4, 5e-3, 1e-3, 5e-3, 1e-2, 5e-2]
+    bs_list = [64, 32]
     lambda_list = [
         [0.16, 0.4, 1.0],
 
@@ -281,7 +284,17 @@ if __name__ == '__main__':
         [0.16, 0.4, 1.2],
         [0.16, 0.4, 0.8],
     ]
+    train_step = [5, 10, 20, 40, 80, 100, 200]
 
     # for lamd in lambda_list:
     #     main(lambda_list=lamd, log_path_end='DEFAULT_CONFIG_LOSS_LAMBDA_%f_%f_%f' % (lamd[0], lamd[1], lamd[2]))
-    main()
+    # main(lr=5e-3, log_path_end='v2_DEFAULT_CONFIG_LR_%f' % 5e-3)
+    # for tr in train_step:
+    #     main(train_epoch=tr, log_path_end='v2_DEFAULT_CONFIG_EPOCH_%d' % tr)
+    main(log_path_end='v2_restore_2018-11-09_21-00-37_random_scale_10_extra_epoch',
+         random_scale=True,
+         train_epoch=10)
+
+    main(log_path_end='v2_restore_2018-11-09_21-00-37_random_mirror_10_extra_epoch',
+         random_mirror=True,
+         train_epoch=10)
