@@ -56,9 +56,8 @@ def load_image(path, pad=True):
     else:
         returns image as numpy.array
     """
-    # img = cv2.imread(str(path))
-    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = path
+
     if not pad:
         return img
 
@@ -164,6 +163,40 @@ def ternauNet(img, model):
     mask[mask <= 0.5] = 0
 
     return mask_array, mask
+
+def ternauNet(img):
+
+    torch.cuda.set_device(1)
+    img_transform = Compose([
+        ToTensor(),
+        Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
+
+    model = unet11(pretrained='carvana')
+    model.eval()
+    #model = model.to(device)
+
+    r, g, b = cv2.split(img)
+    img_bgr = cv2.merge([b, g, r])
+
+    img_bgr, pads = load_image(img_bgr, pad=True)
+
+    with torch.no_grad():
+        input_img = torch.unsqueeze(img_transform(img_bgr), dim=0)
+        mask = F.sigmoid(model(input_img))
+
+
+    mask_array = mask.data[0].cpu().numpy()[0]
+
+    mask_array = crop_image(mask_array, pads)
+    mask=mask_array.copy()
+
+    mask[mask > 0.5] = 1
+    mask[mask <= 0.5] = 0
+
+
+    return mask_array,mask
+
 
 
 if __name__ == '__main__':
