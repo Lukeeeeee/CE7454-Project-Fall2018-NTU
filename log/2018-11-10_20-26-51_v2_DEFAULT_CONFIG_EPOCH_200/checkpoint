@@ -1,0 +1,6 @@
+model_checkpoint_path: "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/log/2018-11-10_20-26-51_v2_DEFAULT_CONFIG_EPOCH_200/model.ckpt-199"
+all_model_checkpoint_paths: "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/log/2018-11-10_20-26-51_v2_DEFAULT_CONFIG_EPOCH_200/model.ckpt-191"
+all_model_checkpoint_paths: "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/log/2018-11-10_20-26-51_v2_DEFAULT_CONFIG_EPOCH_200/model.ckpt-193"
+all_model_checkpoint_paths: "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/log/2018-11-10_20-26-51_v2_DEFAULT_CONFIG_EPOCH_200/model.ckpt-195"
+all_model_checkpoint_paths: "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/log/2018-11-10_20-26-51_v2_DEFAULT_CONFIG_EPOCH_200/model.ckpt-197"
+all_model_checkpoint_paths: "/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/log/2018-11-10_20-26-51_v2_DEFAULT_CONFIG_EPOCH_200/model.ckpt-199"
