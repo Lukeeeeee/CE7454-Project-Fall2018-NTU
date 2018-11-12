@@ -17,12 +17,14 @@ import tensorflow as tf
 import numpy as np
 import cv2
 import time
+from utils.visualize import decode_labels
 from data import DATA_PATH
 import matplotlib.pyplot as plt
 from PIL import Image
 from tqdm import trange
 from utils.config import Config
 from test.TernausNet import Example
+import torch
 from data.tnet_offline_validation_set_res import TNET_LOG_PATH
 
 # mapping different model
@@ -65,6 +67,8 @@ def get_arguments():
 
 
 def main(model_log_dir, check_point):
+    tf.reset_default_graph()
+
     args = get_arguments()
     cfg = Config(dataset=args.dataset,
                  is_training=False,
@@ -72,37 +76,50 @@ def main(model_log_dir, check_point):
                  eval_path_log=os.path.join(LOG_PATH, model_log_dir))
     cfg.model_paths['others'] = os.path.join(LOG_PATH, model_log_dir, 'model.ckpt-%d' % check_point)
 
-    # model = model_config[args.model]
-    #
+    model = model_config[args.model]
+
     reader = ImageReader(cfg=cfg, mode='eval')
-    # net = model(image_reader=reader, cfg=cfg, mode='eval')
-    #
-    # # mIoU
-    # pred_flatten = tf.reshape(net.output, [-1, ])
-    # label_flatten = tf.reshape(net.labels, [-1, ])
-    #
-    # mask = tf.not_equal(label_flatten, cfg.param['ignore_label'])
-    # indices = tf.squeeze(tf.where(mask), 1)
-    # gt = tf.cast(tf.gather(label_flatten, indices), tf.int32)
-    # pred = tf.gather(pred_flatten, indices)
+    net = model(image_reader=reader, cfg=cfg, mode='eval')
 
-    # weight_list = [0.4, 0.6]
-    # ensemble_input = tf.placeholder(dtype=pred.dtype, shape=pred.shape(), name='ensemble_input')
-    # ensemble_pred = pred * weight_list[0] + ensemble_input * weight_list[1]
+    # mIoU
+    pred_flatten = tf.reshape(net.output, [-1, ])
+    label_flatten = tf.reshape(net.labels, [-1, ])
 
-    # if cfg.dataset == 'ade20k':
-    #     pred = tf.add(pred, tf.constant(1, dtype=tf.int64))
-    #     mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'] + 1)
-    # elif cfg.dataset == 'cityscapes':
-    #     mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
-    # elif cfg.dataset == 'others':
-    #     mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
+    mask = tf.not_equal(label_flatten, cfg.param['ignore_label'])
+    indices = tf.squeeze(tf.where(mask), 1)
+    gt = tf.cast(tf.gather(label_flatten, indices), tf.int32)
+    pred = tf.gather(pred_flatten, indices)
 
-        # ensemble_mIoU, ensemble_update_op = tf.metrics.mean_iou(predictions=ensemble_pred, labels=gt,
-        #                                                         num_classes=cfg.param['num_classes'])
+    tnet_result = np.load(file=os.path.join(TNET_LOG_PATH, 'valid.npy'))
 
-    # net.create_session()
-    # net.restore(cfg.model_paths[args.model])
+    weight_list = [[0.4, 0.6], [0.5, 0.5], [0.6, 0.4]]
+    ensemble_pred_list = []
+    ensemble_input = tf.placeholder(dtype=pred.dtype, shape=[None])
+    for weight in weight_list:
+        ensemble_pred = tf.split(net.logits_up, 2, axis=len(net.logits_up.get_shape()) - 1)[1] * weight[0]
+        ensemble_pred = tf.gather(tf.reshape(ensemble_pred, [-1, ]), indices)
+        ensemble_pred = ensemble_pred + tf.cast(ensemble_input, tf.float32) * tf.constant(weight[1])
+        ensemble_pred = tf.round(ensemble_pred)
+        ensemble_pred_list.append(ensemble_pred)
+
+    ensemble_mIoU_list = []
+
+    ensemble_update_op_list = []
+    if cfg.dataset == 'ade20k':
+        pred = tf.add(pred, tf.constant(1, dtype=tf.int64))
+        mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'] + 1)
+    elif cfg.dataset == 'cityscapes':
+        mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
+    elif cfg.dataset == 'others':
+        mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
+        for ensemble_pred in ensemble_pred_list:
+            ensemble_mIoU, ensemble_update_op = tf.metrics.mean_iou(predictions=ensemble_pred, labels=gt,
+                                                                    num_classes=cfg.param['num_classes'])
+            ensemble_mIoU_list.append(ensemble_mIoU)
+            ensemble_update_op_list.append(ensemble_update_op)
+
+    net.create_session()
+    net.restore(cfg.model_paths[args.model])
 
     # im1 = cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/data/0cdf5b5d0ce1_05.jpg')
     # im2=cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/mask/0cdf5b5d0ce1_05_mask.png',cv2.IMREAD_GRAYSCALE)
@@ -116,44 +133,39 @@ def main(model_log_dir, check_point):
     # results1=results1[0][:,:,0]*255
 
     duration = 0
-    model = Example.get_model()
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
+    # model = Example.get_model()
 
-    sess = tf.Session(config=config)
-    final_res = []
-
-    # for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
-    for i in trange(1):
+    for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
         start = time.time()
-        input = sess.run(
-            [reader.next_image])
+        feed_dict = {ensemble_input: tnet_result[i]}
+        _ = net.sess.run(
+            [update_op] + ensemble_update_op_list,
+            feed_dict=feed_dict)
         end = time.time()
 
         duration += (end - start)
 
-        if i % 1 == 0:
+        if i % 100 == 0:
+            pass
             # save_pred_to_image(res=res,
             #                    shape=cfg.param['eval_size'],
             #                    save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
             #                    save_name='eval_%d_img.png' % i)
 
-            input = np.squeeze(input)
-            n_input = _extract_mean_revert(input, IMG_MEAN, swap_channel=True)
-            n_input = n_input.astype(np.uint8)
-            input_image = Image.fromarray(n_input, 'RGB')
-
-            '''tnet -> tnet's predict either 0 1'''
-            res2, tnet_mask = Example.ternauNet(n_input, model)
-            tnet = Image.fromarray((tnet_mask * 255).astype(np.uint8))
-
-            res2 = np.reshape(res2, [-1])
-            final_res.append(res2)
-
+            # input = np.squeeze(input)
+            # n_input = _extract_mean_revert(input, IMG_MEAN, swap_channel=True)
+            # n_input = n_input.astype(np.uint8)
+            # input_image = Image.fromarray(n_input, 'RGB')
+            #
+            # '''tnet -> tnet's predict either 0 1'''
+            # res2, tnet_mask = Example.ternauNet(n_input, model)
+            # tnet = Image.fromarray((tnet_mask * 255).astype(np.uint8))
+            #
+            # res2 = np.reshape(res2, [-1])
             # icnet_logit = np.squeeze(icnet_logit)[:, :, 1]
             # icnet_logit = np.reshape(icnet_logit, [-1])
-
-            # TODO fix the ensemble problem: ensemble the output of softmax, not the argmax: fixed!
+            #
+            # # TODO fix the ensemble problem: ensemble the output of softmax, not the argmax: fixed!
             # ensemble = 0.4 * icnet_logit + 0.6 * res2
             # ensemble[ensemble >= 0.5] = 1
             # ensemble[ensemble < 0.5] = 0
@@ -193,25 +205,33 @@ def main(model_log_dir, check_point):
             #     os.mkdir(save_comparation_path)
             # plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
             # plt.show()
-    np.save(file=os.path.join(TNET_LOG_PATH, 'valid.npy'), arr=np.array(final_res))
+
     # TODO fix the mIou which take the ensemble as output: not done yet!
-    # final_mIou = net.sess.run(mIoU)
-    # # ensemble_final_mIou = net.sess.run(ensemble_mIoU)
+    final_mIou = net.sess.run(mIoU)
+    ensemble_final_mIou_list = net.sess.run(ensemble_mIoU_list)
     # ensemble_final_mIou = -1.0
-    #
-    # print('total time:{} mean inference time:{} mIoU: {}, ensemble mIoU'.format(duration,
-    #                                                                             duration / cfg.param['eval_steps'],
-    #                                                                             final_mIou, ensemble_final_mIou))
-    #
-    # Config.save_to_json(dict={'FINAL_MIOU': float(final_mIou),
-    #                           "EVAL_STEPS": cfg.param['eval_steps'],
-    #                           "ENSEMBLE_MIOU": float(ensemble_final_mIou)},
-    #                     path=os.path.dirname(cfg.model_paths['others']),
-    #                     file_name='eval.json')
+
+    print('total time:{} mean inference time:{} mIoU: {}'.format(duration,
+                                                                 duration / cfg.param['eval_steps'],
+                                                                 final_mIou))
+    for weight, ensemble_iou in zip(weight_list, ensemble_final_mIou_list):
+        print(weight, ensemble_iou)
+
+    Config.save_to_json(dict={'FINAL_MIOU': float(final_mIou),
+                              "EVAL_STEPS": cfg.param['eval_steps'],
+                              "ENSEMBLE_WEIGHT": weight_list,
+                              "ENSEMBLE_MIOU": [float(x) for x in ensemble_final_mIou_list]},
+                        path=os.path.dirname(cfg.model_paths['others']),
+                        file_name='eval.json')
+    sess = tf.get_default_session()
+    if sess:
+        sess._exit__(None, None, None)
 
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
-    main(model_log_dir='2018-11-08_10-52-15__v2_DEFAULT_CONFIG_LR_0.000100', check_point=19)
+    main(model_log_dir='2018-11-07_23-18-47__v2_DEFAULT_CONFIG_LAMBDA_0.160000_0.300000_1.000000', check_point=19)
+    main(model_log_dir='2018-11-08_08-56-52__v2_DEFAULT_CONFIG_LR_0.000500', check_point=19)
+    # main(model_log_dir='2018-11-10_20-26-51_v2_DEFAULT_CONFIG_EPOCH_200', check_point=19)

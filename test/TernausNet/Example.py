@@ -12,13 +12,13 @@ from time import time
 
 import matplotlib.pyplot as plt
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 def get_model():
-    # torch.cuda.set_device(0)
     model = unet11(pretrained='carvana')
     model.eval()
-    return model
-    # return model.to(device)
+    return model.to(device)
 
 
 def mask_overlay(image, mask, color=(0, 255, 0)):
@@ -142,6 +142,8 @@ def ternauNet(img, model):
     # TODO instead of load model every time, pass the model into as an argument.
     # model = unet11(pretrained='carvana')
     # model.eval()
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
     # model = model.to(device)
 
     r, g, b = cv2.split(img)
@@ -150,7 +152,7 @@ def ternauNet(img, model):
     img_bgr, pads = load_image(img_bgr, pad=True)
 
     with torch.no_grad():
-        input_img = torch.unsqueeze(img_transform(img_bgr), dim=0)
+        input_img = torch.unsqueeze(img_transform(img_bgr).to(device), dim=0)
         mask = F.sigmoid(model(input_img))
 
     mask_array = mask.data[0].cpu().numpy()[0]

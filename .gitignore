@@ -137,4 +137,4 @@ data/*
 !data/list
 #/test/TernausNet/
 
-!data/tnet_offline_validation_set_res/
+!data/tnet_offline_validation_set_res/*.py
