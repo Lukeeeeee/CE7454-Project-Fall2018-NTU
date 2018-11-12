@@ -121,9 +121,9 @@ def create_losses(net, label, cfg):
     sub24_out = net.layers['sub24_out']
     sub124_out = net.layers['conv6_cls']
 
-    loss_sub4 = create_bce_loss(sub4_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
-    loss_sub24 = create_bce_loss(sub24_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
-    loss_sub124 = create_bce_loss(sub124_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
+    loss_sub4 = create_loss(sub4_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
+    loss_sub24 = create_loss(sub24_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
+    loss_sub124 = create_loss(sub124_out, label, cfg.param['num_classes'], cfg.param['ignore_label'])
 
     l2_losses = [cfg.WEIGHT_DECAY * tf.nn.l2_loss(v) for v in tf.trainable_variables() if 'weights' in v.name]
 
@@ -140,7 +140,7 @@ class TrainConfig(Config):
 
     # Set pre-trained weights here (You can download weight using `python script/download_weights.py`) 
     # Note that you need to use "bnnomerge" version.
-    model_weight = '../model/cityscapes/icnet_cityscapes_train_30k_bnnomerge.npy'
+    #model_weight = '../model/cityscapes/icnet_cityscapes_train_30k_bnnomerge.npy'
 
     # Set hyperparameters here, you can get much more setting in Config Class, see 'utils/config.py' for details.
     LAMBDA1 = 0.16
@@ -205,7 +205,7 @@ def main(lr=None, log_path_end='', bs=None, lambda_list=None):
 
     # Set restore variable
     restore_var = tf.global_variables()
-    restore_var = [v for v in tf.global_variables() if 'conv6_cls' not in v.name]
+    #restore_var = [v for v in tf.global_variables() if 'conv6_cls' not in v.name]
     all_trainable = [v for v in tf.trainable_variables() if
                      ('beta' not in v.name and 'gamma' not in v.name) or args.train_beta_gamma]
 
@@ -222,7 +222,7 @@ def main(lr=None, log_path_end='', bs=None, lambda_list=None):
 
     # Create session & restore weights (Here we only need to use train_net to create session since we reuse it)
     train_net.create_session()
-    train_net.restore(cfg.model_weight, restore_var)
+    #train_net.restore(cfg.model_weight, restore_var)
     saver = tf.train.Saver(var_list=tf.global_variables(), max_to_keep=5)
 
     # Iterate over training steps.
@@ -265,7 +265,7 @@ def main(lr=None, log_path_end='', bs=None, lambda_list=None):
 
 
 if __name__ == '__main__':
-    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     lr_list = [5e-4, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2]
     bs_list = [256, 128, 64]

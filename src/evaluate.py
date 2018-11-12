@@ -104,16 +104,7 @@ def main(model_log_dir, check_point,mode):
         net.create_session()
         net.restore(cfg.model_paths[args.model])
 
-        # im1 = cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/data/0cdf5b5d0ce1_05.jpg')
-        # im2=cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/mask/0cdf5b5d0ce1_05_mask.png',cv2.IMREAD_GRAYSCALE)
-        # if im1.shape != cfg.INFER_SIZE:
-        #     im1 = cv2.resize(im1, (cfg.INFER_SIZE[1], cfg.INFER_SIZE[0]))
         #
-        # results1 = net.predict(im1)
-        # overlap_results1 = 0.5 * im1 + 0.5 * results1[0]
-        # vis_im1 = np.concatenate([im1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
-
-        # results1=results1[0][:,:,0]*255
 
         duration=0
         if mode=='eval':
@@ -205,11 +196,41 @@ def main(model_log_dir, check_point,mode):
                                 file_name='eval.json',mode=mode)
     else:
         '''inference mode'''
+        args = get_arguments()
+        cfg = Config(dataset=args.dataset,
+                     is_training=False,
+                     filter_scale=args.filter_scale,
+                     eval_path_log=os.path.join(LOG_PATH, model_log_dir))
+        cfg.model_paths['others'] = os.path.join(LOG_PATH, model_log_dir, 'model.ckpt-%d' % check_point)
+
+        model = model_config[args.model]
+
+        reader = ImageReader(cfg=cfg, mode='eval')
+        net = model(cfg=cfg, mode='inference')
+
+        net.create_session()
+        net.restore(cfg.model_paths[args.model])
+
+        im1 = cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/data/0cdf5b5d0ce1_05.jpg')
+        image1 = cv2.cvtColor(im1, cv2.COLOR_BGR2RGB)
+
+        im2=cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/mask/0cdf5b5d0ce1_05_mask.png',cv2.IMREAD_GRAYSCALE)
+        if image1.shape != cfg.INFER_SIZE:
+            image1 = cv2.resize(image1, (cfg.INFER_SIZE[1], cfg.INFER_SIZE[0]))
+
+        results1 = net.predict(image1)
+        overlap_results1 = 0.5 * image1 + 0.5 * results1[0]
+        vis_im1 = np.concatenate([im1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
+
+        results1=results1[0][:,:,0]*255
+        plt.imshow(results1)
+        plt.show()
+
 
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
-    main(model_log_dir='2018-11-08_18-20-14_restore_nonaug_BCE', check_point=19,mode='compute_speed')
+    main(model_log_dir='2018-11-08_18-20-14_restore_nonaug_BCE', check_point=19,mode='inference')
 

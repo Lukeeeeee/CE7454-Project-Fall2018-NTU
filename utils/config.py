@@ -65,7 +65,7 @@ class Config(object):
                     'eval_steps': 1024,
                     'eval_list': Kaggle_eval_list,
                     'train_list': Kaggle_train_list,
-                    'loss_type': 'BCE+DICE',
+                    'loss_type': 'Cross Entropy Loss',
                     'total_train_sample': 4064,
                     'total_eval_sample': 1024,
                     'data_dir': Kaggle_DATA_DIR}
@@ -137,7 +137,7 @@ class Config(object):
                     log_config[k] = v
 
         print("\n")
-        self.save_to_json(dict=log_config, path=os.path.join(self.SNAPSHOT_DIR, 'config.json'))
+        self.save_to_json(dict=log_config, path=os.path.join(self.SNAPSHOT_DIR, 'config.json'),mode='eval')
 
     @staticmethod
     def load_json(file_path):
@@ -146,8 +146,22 @@ class Config(object):
             return res
 
     @staticmethod
-    def save_to_json(dict, path, file_name=None):
+    def save_to_json(mode,dict, path, file_name=None):
         if file_name is not None:
             path = os.path.join(path, file_name)
-        with open(path, 'w') as f:
-            json.dump(obj=dict, fp=f, indent=4, sort_keys=True)
+        if mode=='eval':
+
+            with open(path, 'w') as f:
+                json.dump(obj=dict, fp=f, indent=4, sort_keys=True)
+        else:
+            fr = open(path)
+            model = json.load(fr)
+            fr.close()
+            for i in dict:
+                model[i] = dict[i]
+
+            jsObj = json.dumps(model)
+
+            with open(path, "w") as fw:
+                fw.write(jsObj)
+                fw.close()

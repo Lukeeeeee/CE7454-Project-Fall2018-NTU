@@ -312,7 +312,7 @@ class ICNet_BN(Network):
         elif mode == 'inference':
             # Create placeholder and pre-process here.
             self.img_placeholder = tf.placeholder(dtype=tf.float32, shape=cfg.INFER_SIZE)
-            self.images, self.o_shape, self.n_shape = _infer_preprocess(self.img_placeholder)
+            self.images, self.o_shape, self.n_shape = _infer_preprocess(self.img_placeholder,cfg.IMG_MEAN)
 
             super().__init__(inputs={'data': self.images}, cfg=self.cfg)
 
