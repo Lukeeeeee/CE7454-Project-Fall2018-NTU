@@ -307,7 +307,7 @@ class ICNet_BN(Network):
 
             super().__init__(inputs={'data': self.images}, cfg=self.cfg)
 
-            self.output = self.get_output_node()
+            self.output, self.logits_up = self.get_output_node()
 
         elif mode == 'inference':
             # Create placeholder and pre-process here.
@@ -316,7 +316,7 @@ class ICNet_BN(Network):
 
             super().__init__(inputs={'data': self.images}, cfg=self.cfg)
 
-            self.output = self.get_output_node()
+            self.output, self.logits_up = self.get_output_node()
 
     def get_output_node(self):
         if self.mode == 'inference':
@@ -336,8 +336,8 @@ class ICNet_BN(Network):
             logits_up = tf.image.resize_bilinear(logits, size=tf.shape(self.labels)[1:3], align_corners=True)
             output = tf.argmax(logits_up, axis=3)
             output = tf.expand_dims(output, axis=3)
-
-        return output
+        logits_up = tf.nn.softmax(logits_up)
+        return output, logits_up
 
     def predict(self, image):
         return self.sess.run(self.output, feed_dict={self.img_placeholder: image})

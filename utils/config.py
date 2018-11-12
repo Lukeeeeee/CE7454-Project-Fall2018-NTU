@@ -54,7 +54,7 @@ class Config(object):
                    'train_bn': os.path.join(MODEL_PATH, 'cityscapes', 'icnet_cityscapes_train_30k_bnnomerge.npy'),
                    'trainval_bn': os.path.join(MODEL_PATH, 'cityscapes', 'icnet_cityscapes_trainval_90k_bnnomerge.npy'),
                    'others': os.path.join(LOG_PATH, '2018-11-03_14-04-58/model.ckpt-4999'),
-                   'ade20k':os.path.join(LOG_PATH, 'ade20k','model.ckpt-27150')}
+                   'ade20k': os.path.join(LOG_PATH, 'ade20k', 'model.ckpt-27150')}
     # assert os.path.isfile()
 
     ## If you want to train on your own dataset, try to set these parameters.
@@ -86,7 +86,7 @@ class Config(object):
     WEIGHT_DECAY = 0.0001
 
     SAVE_NUM_IMAGES = 4
-    SAVE_PRED_EVERY = 2
+    SAVE_PRED_EVERY = 1
 
     # Loss Function = LAMBDA1 * sub4_loss + LAMBDA2 * sub24_loss + LAMBDA3 * sub124_loss
     LAMBDA1 = 0.16
