@@ -64,140 +64,152 @@ def get_arguments():
     return parser.parse_args()
 
 
-def main(model_log_dir, check_point):
+def main(model_log_dir, check_point,mode):
     args = get_arguments()
-    cfg = Config(dataset=args.dataset,
-                 is_training=False,
-                 filter_scale=args.filter_scale,
-                 eval_path_log=os.path.join(LOG_PATH, model_log_dir))
-    cfg.model_paths['others'] = os.path.join(LOG_PATH, model_log_dir, 'model.ckpt-%d' % check_point)
 
-    model = model_config[args.model]
+    print('mode:{}'.format(mode))
+    if mode=='eval' or mode=='compute_speed':
 
-    reader = ImageReader(cfg=cfg, mode='eval')
-    net = model(image_reader=reader, cfg=cfg, mode='eval')
 
-    # mIoU
-    pred_flatten = tf.reshape(net.output, [-1, ])
-    label_flatten = tf.reshape(net.labels, [-1, ])
+        cfg = Config(dataset=args.dataset,
+                     is_training=False,
+                     filter_scale=args.filter_scale,
+                     eval_path_log=os.path.join(LOG_PATH, model_log_dir))
+        cfg.model_paths['others'] = os.path.join(LOG_PATH, model_log_dir, 'model.ckpt-%d' % check_point)
 
-    mask = tf.not_equal(label_flatten, cfg.param['ignore_label'])
-    indices = tf.squeeze(tf.where(mask), 1)
-    gt = tf.cast(tf.gather(label_flatten, indices), tf.int32)
-    pred = tf.gather(pred_flatten, indices)
+        model = model_config[args.model]
 
-    net.create_session()
-    net.restore(cfg.model_paths[args.model])
-    if cfg.dataset == 'ade20k':
-        pred = tf.add(pred, tf.constant(1, dtype=tf.int64))
-        mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'] + 1)
-    elif cfg.dataset == 'cityscapes':
-        mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
-    elif cfg.dataset == 'others':
-        mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
+        reader = ImageReader(cfg=cfg, mode='eval')
+        net = model(image_reader=reader, cfg=cfg, mode='eval')
 
-    # im1 = cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/data/0cdf5b5d0ce1_05.jpg')
-    # im2=cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/mask/0cdf5b5d0ce1_05_mask.png',cv2.IMREAD_GRAYSCALE)
-    # if im1.shape != cfg.INFER_SIZE:
-    #     im1 = cv2.resize(im1, (cfg.INFER_SIZE[1], cfg.INFER_SIZE[0]))
-    #
-    # results1 = net.predict(im1)
-    # overlap_results1 = 0.5 * im1 + 0.5 * results1[0]
-    # vis_im1 = np.concatenate([im1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
+        # mIoU
+        pred_flatten = tf.reshape(net.output, [-1, ])
+        label_flatten = tf.reshape(net.labels, [-1, ])
 
-    # results1=results1[0][:,:,0]*255
+        mask = tf.not_equal(label_flatten, cfg.param['ignore_label'])
+        indices = tf.squeeze(tf.where(mask), 1)
+        gt = tf.cast(tf.gather(label_flatten, indices), tf.int32)
+        pred = tf.gather(pred_flatten, indices)
 
-    duration=0
-    for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
 
-        start=time.time()
-        res, input,labels,out = net.sess.run([pred, net.images,net.labels,net.output])
-        end=time.time()
 
-        duration+=(end-start)
-        # if i % 100==0:
+        if cfg.dataset == 'ade20k':
+            pred = tf.add(pred, tf.constant(1, dtype=tf.int64))
+            mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'] + 1)
+        elif cfg.dataset == 'cityscapes':
+            mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
+        elif cfg.dataset == 'others':
+            mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
+
+        net.create_session()
+        net.restore(cfg.model_paths[args.model])
+
+        # im1 = cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/data/0cdf5b5d0ce1_05.jpg')
+        # im2=cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/mask/0cdf5b5d0ce1_05_mask.png',cv2.IMREAD_GRAYSCALE)
+        # if im1.shape != cfg.INFER_SIZE:
+        #     im1 = cv2.resize(im1, (cfg.INFER_SIZE[1], cfg.INFER_SIZE[0]))
         #
-        #     save_pred_to_image(res=res,
-        #                          shape=cfg.param['eval_size'],
-        #                        save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
-        #                        save_name='eval_%d_img.png' % i)
-        input = np.squeeze(input)
-        n_input = _extract_mean_revert(input, IMG_MEAN, swap_channel=True)
-        n_input = n_input.astype(np.uint8)
-        input_image = Image.fromarray(n_input, 'RGB')
+        # results1 = net.predict(im1)
+        # overlap_results1 = 0.5 * im1 + 0.5 * results1[0]
+        # vis_im1 = np.concatenate([im1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
 
-        '''tnet -> tnet's predict either 0 1'''
-        res2,tnet_mask = Example.ternauNet(n_input)
-        tnet = Image.fromarray((tnet_mask * 255).astype(np.uint8))
-        res2 = np.reshape(res2, [-1])
+        # results1=results1[0][:,:,0]*255
 
-        ensemble = 0.4 * res + 0.6*res2
-        ensemble[ensemble >= 0.5] = 1
-        ensemble[ensemble < 0.5] = 0
+        duration=0
+        if mode=='eval':
 
-        if i % 100 == 0:
+            for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
 
-            # save_pred_to_image(res=res,
-            #                    shape=cfg.param['eval_size'],
-            #                    save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
-            #                    save_name='eval_%d_img.png' % i)
+                start=time.time()
+                _,res, input,labels,out = net.sess.run([update_op,pred, net.images,net.labels,net.output])
+                end=time.time()
+
+                duration+=(end-start)
+
+                input = np.squeeze(input)
+                n_input = _extract_mean_revert(input, IMG_MEAN, swap_channel=True)
+                n_input = n_input.astype(np.uint8)
+                input_image = Image.fromarray(n_input, 'RGB')
+
+                '''tnet -> tnet's predict either 0 1'''
+                # res2,tnet_mask = Example.ternauNet(n_input)
+                # tnet = Image.fromarray((tnet_mask * 255).astype(np.uint8))
+                # res2 = np.reshape(res2, [-1])
+                #
+                # ensemble = 0.4 * res + 0.6*res2
+                # ensemble[ensemble >= 0.5] = 1
+                # ensemble[ensemble < 0.5] = 0
+
+                # if i % 100 == 0:
+                #
+                #     # save_pred_to_image(res=res,
+                #     #                    shape=cfg.param['eval_size'],
+                #     #                    save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
+                #     #                    save_name='eval_%d_img.png' % i)
+                #
+                #
+                #
+                #     '''res-> network predict either 0 or 1 on each element '''
+                #     icnet = np.array(np.reshape(res, cfg.param['eval_size']), dtype=np.uint8) * 255
+                #     icnet = Image.fromarray(icnet.astype(np.uint8))
+                #     labels = np.squeeze(labels) * 255
+                #     labels = Image.fromarray(labels.astype(np.uint8))
+                #     fig, ax1 = plt.subplots(figsize=(80, 13))
+                #
+                #     plot1=plt.subplot(141)
+                #     plot1.set_title("Input Image",fontsize=50)
+                #     plt.imshow(input_image)
+                #     plt.axis('off')
+                #
+                #     plot2=plt.subplot(142)
+                #     plot2.set_title("Ground Truth Mask",fontsize=50)
+                #     plt.imshow(labels, cmap='gray')
+                #     plt.axis('off')
+                #
+                #     plot3=plt.subplot(143)
+                #     plot3.set_title("Our Result",fontsize=50)
+                #     plt.imshow(icnet, cmap='gray')
+                #     plt.axis('off')
+                #
+                #     plot4=plt.subplot(144)
+                #     plot4.set_title("TernausNet's Result",fontsize=50)
+                #     plt.imshow(tnet, cmap='gray')
+                #     plt.axis('off')
+                #
+                #
+                #     plt.show()
+
+                    # save_comparation_path = os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
+                    # if os.path.exists(save_comparation_path) is False:
+                    #     os.mkdir(save_compaation_path)
+                    # plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
 
 
+            final_mIou = net.sess.run(mIoU)
+            print('total time:{} mean inference time:{} mIoU: {}'.format(duration,duration/cfg.param['eval_steps'],final_mIou))
 
-            '''res-> network predict either 0 or 1 on each element '''
-            icnet = np.array(np.reshape(res, cfg.param['eval_size']), dtype=np.uint8) * 255
-            icnet = Image.fromarray(icnet.astype(np.uint8))
-            labels = np.squeeze(labels) * 255
-            labels = Image.fromarray(labels.astype(np.uint8))
-            fig, ax1 = plt.subplots(figsize=(80, 13))
+            Config.save_to_json(dict={'FINAL_MIOU': float(final_mIou), "EVAL_STEPS": cfg.param['eval_steps']},
+                                path=os.path.dirname(cfg.model_paths['others']),
+                                file_name='eval.json',mode=mode)
+        else:
+            for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
 
-            plot1=plt.subplot(141)
-            plot1.set_title("Input Image",fontsize=50)
-            plt.imshow(input_image)
-            plt.axis('off')
+                start = time.time()
+                res= net.sess.run(pred)
+                end = time.time()
+                duration += (end - start)
 
-            plot2=plt.subplot(142)
-            plot2.set_title("Ground Truth Mask",fontsize=50)
-            plt.imshow(labels, cmap='gray')
-            plt.axis('off')
-
-            plot3=plt.subplot(143)
-            plot3.set_title("Our Result",fontsize=50)
-            plt.imshow(icnet, cmap='gray')
-            plt.axis('off')
-
-            plot4=plt.subplot(144)
-            plot4.set_title("TernausNet's Result",fontsize=50)
-            plt.imshow(tnet, cmap='gray')
-            plt.axis('off')
-
-
-            plt.show()
-
-
-
-
-            # save_comparation_path = os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
-            # if os.path.exists(save_comparation_path) is False:
-            #     os.mkdir(save_comparation_path)
-            # plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
-
-
-
-
-
-
-    final_mIou = net.sess.run(mIoU)
-    print('total time:{} mean inference time:{} mIoU: {}'.format(duration,duration/cfg.param['eval_steps'],final_mIou))
-
-    Config.save_to_json(dict={'FINAL_MIOU': float(final_mIou), "EVAL_STEPS": cfg.param['eval_steps']},
-                        path=os.path.dirname(cfg.model_paths['others']),
-                        file_name='eval.json')
+            print('total time:{} mean inference time:{}'.format(duration, duration / cfg.param['eval_steps']))
+            Config.save_to_json(dict={'Total Inference Time': float(duration), "Mean Inference Time": duration / cfg.param['eval_steps']},
+                                path=os.path.dirname(cfg.model_paths['others']),
+                                file_name='eval.json',mode=mode)
+    else:
+        '''inference mode'''
 
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    #os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
-    main(model_log_dir='2018-11-08_13-21-26_restore_nonaug', check_point=19)
+    main(model_log_dir='2018-11-08_18-20-14_restore_nonaug_BCE', check_point=19,mode='compute_speed')
 
