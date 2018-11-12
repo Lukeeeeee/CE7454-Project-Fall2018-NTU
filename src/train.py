@@ -134,14 +134,18 @@ def create_losses(net, label, cfg):
 
 
 class TrainConfig(Config):
-    def __init__(self, dataset, is_training, filter_scale=1, random_scale=None, random_mirror=None, log_path_end=''):
+    def __init__(self, dataset, is_training, filter_scale=1, random_scale=None, random_mirror=None, log_path_end='',
+                 model_weight=None):
         Config.__init__(self, dataset, is_training, filter_scale, random_scale, random_mirror,
                         log_path_end=log_path_end)
 
-    # Set pre-trained weights here (You can download weight using `python script/download_weights.py`) 
-    # Note that you need to use "bnnomerge" version.
-    # model_weight = '../model/cityscapes/icnet_cityscapes_train_30k_bnnomerge.npy'
-    model_weight = '/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/log/2018-11-09_21-00-37_v2_DEFAULT_CONFIG_EPOCH_10/model.ckpt-9'
+        # Set pre-trained weights here (You can download weight using `python script/download_weights.py`)
+        # Note that you need to use "bnnomerge" version.
+        # model_weight = '../model/cityscapes/icnet_cityscapes_train_30k_bnnomerge.npy'
+        if not model_weight:
+            self.model_weight = '/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/log/2018-11-09_21-00-37_v2_DEFAULT_CONFIG_EPOCH_10/model.ckpt-9'
+        else:
+            self.model_weight = model_weight
 
     # Set hyperparameters here, you can get much more setting in Config Class, see 'utils/config.py' for details.
     LAMBDA1 = 0.16
@@ -152,7 +156,8 @@ class TrainConfig(Config):
     LEARNING_RATE = 5e-4
 
 
-def main(lr=None, log_path_end='', bs=None, train_epoch=None, lambda_list=None, random_mirror=False, random_scale=False):
+def main(lr=None, log_path_end='', bs=None, train_epoch=None, lambda_list=None, random_mirror=False, random_scale=False,
+         model_weight=None):
     """Create the model and start the training."""
     tf.reset_default_graph()
     args = get_arguments()
@@ -169,7 +174,8 @@ def main(lr=None, log_path_end='', bs=None, train_epoch=None, lambda_list=None, 
                       random_scale=random_scale,
                       random_mirror=random_mirror,
                       filter_scale=args.filter_scale,
-                      log_path_end=log_path_end)
+                      log_path_end=log_path_end,
+                      model_weight=model_weight)
     if lr:
         cfg.LEARNING_RATE = lr
     if bs:
@@ -179,7 +185,7 @@ def main(lr=None, log_path_end='', bs=None, train_epoch=None, lambda_list=None, 
         cfg.LAMBDA1 = lambda_list[0]
         cfg.LAMBDA2 = lambda_list[1]
         cfg.LAMBDA3 = lambda_list[2]
-    if train_epoch:
+    if train_epoch is not None:
         cfg.TRAINING_EPOCHS = train_epoch
 
     cfg.display()
@@ -265,6 +271,7 @@ def main(lr=None, log_path_end='', bs=None, train_epoch=None, lambda_list=None, 
     sess = tf.get_default_session()
     if sess:
         sess._exit__(None, None, None)
+    return cfg.SNAPSHOT_DIR
 
 
 if __name__ == '__main__':
@@ -291,6 +298,7 @@ if __name__ == '__main__':
     # main(lr=5e-3, log_path_end='v2_DEFAULT_CONFIG_LR_%f' % 5e-3)
     # for tr in train_step:
     #     main(train_epoch=tr, log_path_end='v2_DEFAULT_CONFIG_EPOCH_%d' % tr)
+
     main(log_path_end='v2_restore_2018-11-09_21-00-37_random_scale_10_extra_epoch',
          random_scale=True,
          train_epoch=10)
@@ -298,3 +306,12 @@ if __name__ == '__main__':
     main(log_path_end='v2_restore_2018-11-09_21-00-37_random_mirror_10_extra_epoch',
          random_mirror=True,
          train_epoch=10)
+
+    log_dir = main(log_path_end='v2_restore_2018-11-09_21-00-37_random_scale_5_extra_epoch',
+                   random_scale=True,
+                   train_epoch=5)
+
+    main(log_path_end='v2_restore_2018-11-09_21-00-37_random_mirror_5_extra_epoch',
+         random_mirror=True,
+         model_weight=os.path.join(log_dir, 'model.ckpt-4'),
+         train_epoch=5)

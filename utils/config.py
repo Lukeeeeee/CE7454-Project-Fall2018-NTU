@@ -86,7 +86,7 @@ class Config(object):
     WEIGHT_DECAY = 0.0001
 
     SAVE_NUM_IMAGES = 4
-    SAVE_PRED_EVERY = 2
+    SAVE_PRED_EVERY = 1
 
     # Loss Function = LAMBDA1 * sub4_loss + LAMBDA2 * sub24_loss + LAMBDA3 * sub124_loss
     LAMBDA1 = 0.16
