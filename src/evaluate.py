@@ -4,6 +4,7 @@ import tensorflow as tf
 from tqdm import trange
 
 from utils.config import Config
+import json
 from utils.image_reader import ImageReader
 from src.model import ICNet, ICNet_BN
 import os
@@ -163,4 +164,13 @@ def main(model_log_dir, check_point):
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    main(model_log_dir='', check_point=19)
+    log_list = [
+        '/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/log/2018-11-09_20-31-18_v2_DEFAULT_CONFIG_EPOCH_5',
+        '/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/log/2018-11-10_20-26-51_v2_DEFAULT_CONFIG_EPOCH_200']
+    main(model_log_dir=log_list[0], check_point=3)
+    sess = tf.get_default_session()
+    if sess:
+        sess._exit__(None, None, None)
+    tf.reset_default_graph()
+    main(model_log_dir=log_list[1], check_point=199)
+
