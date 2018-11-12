@@ -99,7 +99,7 @@ def unet11(pretrained=False, **kwargs):
     model = UNet11(pretrained=pretrained, **kwargs)
 
     if pretrained == 'carvana':
-        state = torch.load('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/test/TernausNet/TernausNet.pt')
+        state = torch.load('/media/jingkai/drive_b/academic/CE7454 Deep Learning for Data Science/clone/CE7454_Project_Fall2018_NTU/test/TernausNet/TernausNet.pt')
         model.load_state_dict(state['model'])
     return model
 

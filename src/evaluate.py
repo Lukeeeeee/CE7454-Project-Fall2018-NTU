@@ -17,12 +17,14 @@ import tensorflow as tf
 import numpy as np
 import cv2
 import time
+
 from data import DATA_PATH
 import matplotlib.pyplot as plt
 from PIL import Image
 from tqdm import trange
 from utils.config import Config
 from test.TernausNet import Example
+import kmean
 import torch
 
 # mapping different model
@@ -88,6 +90,7 @@ def main(model_log_dir, check_point):
 
     net.create_session()
     net.restore(cfg.model_paths[args.model])
+
     if cfg.dataset == 'ade20k':
         pred = tf.add(pred, tf.constant(1, dtype=tf.int64))
         mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'] + 1)
@@ -111,7 +114,7 @@ def main(model_log_dir, check_point):
     for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
 
         start=time.time()
-        res, input,labels,out = net.sess.run([pred, net.images,net.labels,net.output])
+        res, input,labels, out = net.sess.run([pred, net.images, net.labels, net.output])
         end=time.time()
 
         duration+=(end-start)
@@ -125,6 +128,8 @@ def main(model_log_dir, check_point):
         n_input = _extract_mean_revert(input, IMG_MEAN, swap_channel=True)
         n_input = n_input.astype(np.uint8)
         input_image = Image.fromarray(n_input, 'RGB')
+
+
 
         '''tnet -> tnet's predict either 0 1'''
         res2,tnet_mask = Example.ternauNet(n_input)
@@ -147,8 +152,12 @@ def main(model_log_dir, check_point):
             '''res-> network predict either 0 or 1 on each element '''
             icnet = np.array(np.reshape(res, cfg.param['eval_size']), dtype=np.uint8) * 255
             icnet = Image.fromarray(icnet.astype(np.uint8))
-            labels = np.squeeze(labels) * 255
+            label_sq = np.squeeze(labels)
+            labels = label_sq * 255
             labels = Image.fromarray(labels.astype(np.uint8))
+
+            kmean_res = kmean.extract_mask(input, label_sq)
+
             fig, ax1 = plt.subplots(figsize=(80, 13))
 
             plot1=plt.subplot(141)
@@ -166,12 +175,15 @@ def main(model_log_dir, check_point):
             plt.imshow(icnet, cmap='gray')
             plt.axis('off')
 
-            plot4=plt.subplot(144)
-            plot4.set_title("TernausNet's Result",fontsize=50)
-            plt.imshow(tnet, cmap='gray')
+            # plot4=plt.subplot(144)
+            # plot4.set_title("TernausNet's Result",fontsize=50)
+            # plt.imshow(tnet, cmap='gray')
+            # plt.axis('off')
+
+            plot4 = plt.subplot(144)
+            plot4.set_title("Ensemble K-Means Result", fontsize=50)
+            plt.imshow(kmean_res, cmap='gray')
             plt.axis('off')
-
-
             plt.show()
 
 
@@ -197,7 +209,7 @@ def main(model_log_dir, check_point):
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    #os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
     main(model_log_dir='2018-11-08_13-21-26_restore_nonaug', check_point=19)
 
