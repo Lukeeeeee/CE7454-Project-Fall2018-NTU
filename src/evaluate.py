@@ -63,6 +63,16 @@ def get_arguments():
 
     return parser.parse_args()
 
+def run_length_encode(mask):
+    '''
+    img: numpy array, 1 - mask, 0 - background
+    Returns run length as string formated
+    '''
+    inds = mask.flatten()
+    runs = np.where(inds[1:] != inds[:-1])[0] + 2
+    runs[1::2] = runs[1::2] - runs[:-1:2]
+    rle = ' '.join([str(r) for r in runs])
+    return rle
 
 def main(model_log_dir, check_point,mode):
     args = get_arguments()
@@ -211,21 +221,47 @@ def main(model_log_dir, check_point,mode):
         net.create_session()
         net.restore(cfg.model_paths[args.model])
 
-        im1 = cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/data/0cdf5b5d0ce1_05.jpg')
-        image1 = cv2.cvtColor(im1, cv2.COLOR_BGR2RGB)
+        dir = '/media/data1/hewei/test/'
+        N = len(list(os.listdir(dir)))
+        # im1 = cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/data/0cdf5b5d0ce1_05.jpg')
+        # image1 = cv2.cvtColor(im1, cv2.COLOR_BGR2RGB)
+        #
+        # im2=cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/mask/0cdf5b5d0ce1_05_mask.png',cv2.IMREAD_GRAYSCALE)
+        # if image1.shape != cfg.INFER_SIZE:
+        #     image1 = cv2.resize(image1, (cfg.INFER_SIZE[1], cfg.INFER_SIZE[0]))
+        # results1 = net.predict(image1)
+        # results1=np.squeeze(results1)
+        # plt.imshow(results1,cmap='gray')
+        # plt.show()
+        '''Comparison'''
 
-        im2=cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/mask/0cdf5b5d0ce1_05_mask.png',cv2.IMREAD_GRAYSCALE)
-        if image1.shape != cfg.INFER_SIZE:
-            image1 = cv2.resize(image1, (cfg.INFER_SIZE[1], cfg.INFER_SIZE[0]))
+        # overlap_results1 = 0.5 * image1 + 0.5 * results1[0]
+        # vis_im1 = np.concatenate([image1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
+        #
+        # # results1=results1[0][:,:,0]*255
+        # check=results1[0]
+        # plt.figure(figsize=(20, 15))
+        # plt.imshow(vis_im1)
+        # plt.show()
 
-        results1 = net.predict(image1)
-        overlap_results1 = 0.5 * image1 + 0.5 * results1[0]
-        vis_im1 = np.concatenate([image1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
+        with open('SUBMISSION.csv', 'a') as f:
+            f.write('img,rle_mask\n')
+            for index, i in enumerate(os.listdir(dir)):
+                img = Image.open(dir + i)
 
-        results1=results1[0][:,:,0]*255
-        plt.figure(figsize=(20, 15))
-        plt.imshow(vis_im1)
-        plt.show()
+                start = time.time()
+
+                icnet_predict = net.predict(img)
+
+                stop = time.time()
+                mask_array =np.squeeze(icnet_predict)
+
+                plt.imshow(mask_array, cmap='gray')
+                plt.show()
+
+                en = run_length_encode(mask_array)
+                print('{}/{} cost{}s'.format(index, N, str(stop - start)))
+                f.write('{},{}\n'.format(i, en))
 
 
 

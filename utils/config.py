@@ -71,7 +71,7 @@ class Config(object):
                     'data_dir': Kaggle_DATA_DIR}
 
     ## You can modify following lines to train different training configurations.
-    INFER_SIZE = [1280, 1920, 3]
+    INFER_SIZE = [1280, 1918, 3]
     TRAINING_SIZE = [720, 720]
 
     # previously 60001

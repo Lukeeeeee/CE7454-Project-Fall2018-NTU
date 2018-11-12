@@ -148,7 +148,7 @@ if __name__ == '__main__':
     #     save_name='loss_val'
     # )
 
-    path_list = glob.glob('/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/log/2018*LAM*')
+    path_list = glob.glob('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/log/2018*')
     plot_multi_loss(file_list=path_list,
                     label_list=[str(i) for i in range(len(path_list))],
                     key='LOSS_VALUE',

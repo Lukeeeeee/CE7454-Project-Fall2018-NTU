@@ -328,8 +328,8 @@ class ICNet_BN(Network):
             logits_up = tf.image.crop_to_bounding_box(logits_up, 0, 0, self.o_shape[0], self.o_shape[1])
 
             output_classes = tf.argmax(logits_up, axis=3)
-            output = decode_labels(output_classes, self.o_shape, self.cfg.param['num_classes'])
-
+            # output = decode_labels(output_classes, self.o_shape, self.cfg.param['num_classes'])
+            output=output_classes
         elif self.mode == 'eval':
             logits = self.layers['conv6_cls']
 
