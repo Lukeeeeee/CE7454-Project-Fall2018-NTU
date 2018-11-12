@@ -220,10 +220,11 @@ def main(model_log_dir, check_point,mode):
 
         results1 = net.predict(image1)
         overlap_results1 = 0.5 * image1 + 0.5 * results1[0]
-        vis_im1 = np.concatenate([im1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
+        vis_im1 = np.concatenate([image1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
 
         results1=results1[0][:,:,0]*255
-        plt.imshow(results1)
+        plt.figure(figsize=(20, 15))
+        plt.imshow(vis_im1)
         plt.show()
 
 
