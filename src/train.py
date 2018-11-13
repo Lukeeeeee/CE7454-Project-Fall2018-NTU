@@ -275,7 +275,7 @@ def main(lr=None, log_path_end='', bs=None, train_epoch=None, lambda_list=None, 
 
 
 if __name__ == '__main__':
-    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     lr_list = [5e-4, 1e-4, 5e-3, 1e-3, 5e-3, 1e-2, 5e-2]
     bs_list = [64, 32]
@@ -299,19 +299,28 @@ if __name__ == '__main__':
     # for tr in train_step:
     #     main(train_epoch=tr, log_path_end='v2_DEFAULT_CONFIG_EPOCH_%d' % tr)
 
-    main(log_path_end='v2_restore_2018-11-09_21-00-37_random_scale_10_extra_epoch',
-         random_scale=True,
-         train_epoch=10)
+    # main(log_path_end='v2_best_hyper_parameter_epoch_20',
+    #      random_scale=False,
+    #      lambda_list=[0.16, 0.3, 1.0],
+    #      lr=0.000500,
+    #      train_epoch=20)
 
-    main(log_path_end='v2_restore_2018-11-09_21-00-37_random_mirror_10_extra_epoch',
-         random_mirror=True,
-         train_epoch=10)
+    main(log_path_end='v2_best_hyper_parameter_epoch_200_continue',
+         random_scale=False,
+         lambda_list=[0.16, 0.3, 1.0],
+         model_weight='/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/log/2018-11-13_01-11-43_v2_best_hyper_parameter_epoch_200/model.ckpt-154',
+         lr=0.000500,
+         train_epoch=45)
 
-    log_dir = main(log_path_end='v2_restore_2018-11-09_21-00-37_random_scale_5_extra_epoch',
-                   random_scale=True,
-                   train_epoch=5)
-
-    main(log_path_end='v2_restore_2018-11-09_21-00-37_random_mirror_5_extra_epoch',
-         random_mirror=True,
-         model_weight=os.path.join(log_dir, 'model.ckpt-4'),
-         train_epoch=5)
+    # main(log_path_end='v2_restore_2018-11-09_21-00-37_random_mirror_10_extra_epoch',
+    #      random_mirror=True,
+    #      train_epoch=10)
+    #
+    # log_dir = main(log_path_end='v2_restore_2018-11-09_21-00-37_random_scale_5_extra_epoch',
+    #                random_scale=True,
+    #                train_epoch=5)
+    #
+    # main(log_path_end='v2_restore_2018-11-09_21-00-37_random_mirror_5_extra_epoch',
+    #      random_mirror=True,
+    #      model_weight=os.path.join(log_dir, 'model.ckpt-4'),
+    #      train_epoch=5)
