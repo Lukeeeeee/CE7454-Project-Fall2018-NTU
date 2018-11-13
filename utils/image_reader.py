@@ -138,10 +138,10 @@ def _check_input(img):
     return img, shape
 
 
-def _infer_preprocess(img, swap_channel=False):
+def _infer_preprocess(img, img_mean,swap_channel=False):
     o_shape = img.shape[0:2]
 
-    img = _extract_mean(img, swap_channel)
+    img = _extract_mean(img, img_mean,swap_channel)
     img = tf.expand_dims(img, axis=0)
     img, n_shape = _check_input(img)
 

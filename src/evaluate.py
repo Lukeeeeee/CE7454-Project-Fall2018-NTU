@@ -65,30 +65,45 @@ def get_arguments():
 
     return parser.parse_args()
 
+def run_length_encode(mask):
+    '''
+    img: numpy array, 1 - mask, 0 - background
+    Returns run length as string formated
+    '''
+    inds = mask.flatten()
+    runs = np.where(inds[1:] != inds[:-1])[0] + 2
+    runs[1::2] = runs[1::2] - runs[:-1:2]
+    rle = ' '.join([str(r) for r in runs])
+    return rle
 
 def main(model_log_dir, check_point):
     tf.reset_default_graph()
 
     args = get_arguments()
-    cfg = Config(dataset=args.dataset,
-                 is_training=False,
-                 filter_scale=args.filter_scale,
-                 eval_path_log=os.path.join(LOG_PATH, model_log_dir))
-    cfg.model_paths['others'] = os.path.join(LOG_PATH, model_log_dir, 'model.ckpt-%d' % check_point)
 
-    model = model_config[args.model]
+    print('mode:{}'.format(mode))
+    if mode=='eval' or mode=='compute_speed':
 
-    reader = ImageReader(cfg=cfg, mode='eval')
-    net = model(image_reader=reader, cfg=cfg, mode='eval')
 
-    # mIoU
-    pred_flatten = tf.reshape(net.output, [-1, ])
-    label_flatten = tf.reshape(net.labels, [-1, ])
+        cfg = Config(dataset=args.dataset,
+                     is_training=False,
+                     filter_scale=args.filter_scale,
+                     eval_path_log=os.path.join(LOG_PATH, model_log_dir))
+        cfg.model_paths['others'] = os.path.join(LOG_PATH, model_log_dir, 'model.ckpt-%d' % check_point)
 
-    mask = tf.not_equal(label_flatten, cfg.param['ignore_label'])
-    indices = tf.squeeze(tf.where(mask), 1)
-    gt = tf.cast(tf.gather(label_flatten, indices), tf.int32)
-    pred = tf.gather(pred_flatten, indices)
+        model = model_config[args.model]
+
+        reader = ImageReader(cfg=cfg, mode='eval')
+        net = model(image_reader=reader, cfg=cfg, mode='eval')
+
+        # mIoU
+        pred_flatten = tf.reshape(net.output, [-1, ])
+        label_flatten = tf.reshape(net.labels, [-1, ])
+
+        mask = tf.not_equal(label_flatten, cfg.param['ignore_label'])
+        indices = tf.squeeze(tf.where(mask), 1)
+        gt = tf.cast(tf.gather(label_flatten, indices), tf.int32)
+        pred = tf.gather(pred_flatten, indices)
 
     net.create_session()
     net.restore(cfg.model_paths[args.model])
@@ -106,36 +121,33 @@ def main(model_log_dir, check_point):
             ensemble_mIoU_list.append(ensemble_mIoU)
             ensemble_update_op_list.append(ensemble_update_op)
 
-    # im1 = cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/data/0cdf5b5d0ce1_05.jpg')
-    # im2=cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/mask/0cdf5b5d0ce1_05_mask.png',cv2.IMREAD_GRAYSCALE)
-    # if im1.shape != cfg.INFER_SIZE:
-    #     im1 = cv2.resize(im1, (cfg.INFER_SIZE[1], cfg.INFER_SIZE[0]))
-    #
-    # results1 = net.predict(im1)
-    # overlap_results1 = 0.5 * im1 + 0.5 * results1[0]
-    # vis_im1 = np.concatenate([im1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
 
-    # results1=results1[0][:,:,0]*255
-    duration=0
-    for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
+        if cfg.dataset == 'ade20k':
+            pred = tf.add(pred, tf.constant(1, dtype=tf.int64))
+            mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'] + 1)
+        elif cfg.dataset == 'cityscapes':
+            mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
+        elif cfg.dataset == 'others':
+            mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
 
-        start=time.time()
-        res, input,labels, out = net.sess.run([pred, net.images, net.labels, net.output])
-        end=time.time()
+        net.create_session()
+        net.restore(cfg.model_paths[args.model])
 
-        duration+=(end-start)
-        # if i % 100==0:
-        #
-        #     save_pred_to_image(res=res,
-        #                          shape=cfg.param['eval_size'],
-        #                        save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
-        #                        save_name='eval_%d_img.png' % i)
-        input = np.squeeze(input)
-        n_input = _extract_mean_revert(input, IMG_MEAN, swap_channel=True)
-        n_input = n_input.astype(np.uint8)
-        input_image = Image.fromarray(n_input, 'RGB')
+        duration=0
+        if mode=='eval':
 
+            for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
 
+                start=time.time()
+                _,res, input,labels,out = net.sess.run([update_op,pred, net.images,net.labels,net.output])
+                end=time.time()
+
+                duration+=(end-start)
+
+                input = np.squeeze(input)
+                n_input = _extract_mean_revert(input, IMG_MEAN, swap_channel=True)
+                n_input = n_input.astype(np.uint8)
+                input_image = Image.fromarray(n_input, 'RGB')
 
         '''tnet -> tnet's predict either 0 1'''
         res2,tnet_mask = Example.ternauNet(n_input)
@@ -158,12 +170,8 @@ def main(model_log_dir, check_point):
             '''res-> network predict either 0 or 1 on each element '''
             icnet = np.array(np.reshape(res, cfg.param['eval_size']), dtype=np.uint8) * 255
             icnet = Image.fromarray(icnet.astype(np.uint8))
-            label_sq = np.squeeze(labels)
-            labels = label_sq * 255
+            labels = np.squeeze(labels) * 255
             labels = Image.fromarray(labels.astype(np.uint8))
-
-            kmean_res = kmean.extract_mask(input, label_sq)
-
             fig, ax1 = plt.subplots(figsize=(80, 13))
 
             plot1=plt.subplot(141)
@@ -181,24 +189,25 @@ def main(model_log_dir, check_point):
             plt.imshow(icnet, cmap='gray')
             plt.axis('off')
 
-            # plot4=plt.subplot(144)
-            # plot4.set_title("TernausNet's Result",fontsize=50)
-            # plt.imshow(tnet, cmap='gray')
-            # plt.axis('off')
-
-            plot4 = plt.subplot(144)
-            plot4.set_title("Ensemble K-Means Result", fontsize=50)
-            plt.imshow(kmean_res, cmap='gray')
+            plot4=plt.subplot(144)
+            plot4.set_title("TernausNet's Result",fontsize=50)
+            plt.imshow(tnet, cmap='gray')
             plt.axis('off')
+
+
             plt.show()
+
+
+
 
             # save_comparation_path = os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
             # if os.path.exists(save_comparation_path) is False:
             #     os.mkdir(save_comparation_path)
             # plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
 
-    final_mIou = net.sess.run(mIoU)
-    print('total time:{} mean inference time:{} mIoU: {}'.format(duration,duration/cfg.param['eval_steps'],final_mIou))
+
+            final_mIou = net.sess.run(mIoU)
+            print('total time:{} mean inference time:{} mIoU: {}'.format(duration,duration/cfg.param['eval_steps'],final_mIou))
 
     Config.save_to_json(dict={'FINAL_MIOU': float(final_mIou), "EVAL_STEPS": cfg.param['eval_steps']},
 
@@ -207,11 +216,85 @@ def main(model_log_dir, check_point):
     sess = tf.get_default_session()
     if sess:
         sess._exit__(None, None, None)
+            Config.save_to_json(dict={'FINAL_MIOU': float(final_mIou), "EVAL_STEPS": cfg.param['eval_steps']},
+                                path=os.path.dirname(cfg.model_paths['others']),
+                                file_name='eval.json',mode=mode)
+        else:
+            for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
+
+                start = time.time()
+                res= net.sess.run(pred)
+                end = time.time()
+                duration += (end - start)
+
+            print('total time:{} mean inference time:{}'.format(duration, duration / cfg.param['eval_steps']))
+            Config.save_to_json(dict={'Total Inference Time': float(duration), "Mean Inference Time": duration / cfg.param['eval_steps']},
+                                path=os.path.dirname(cfg.model_paths['others']),
+                                file_name='eval.json',mode=mode)
+    else:
+        '''inference mode'''
+        args = get_arguments()
+        cfg = Config(dataset=args.dataset,
+                     is_training=False,
+                     filter_scale=args.filter_scale,
+                     eval_path_log=os.path.join(LOG_PATH, model_log_dir))
+        cfg.model_paths['others'] = os.path.join(LOG_PATH, model_log_dir, 'model.ckpt-%d' % check_point)
+
+        model = model_config[args.model]
+
+        reader = ImageReader(cfg=cfg, mode='eval')
+        net = model(cfg=cfg, mode='inference')
+
+        net.create_session()
+        net.restore(cfg.model_paths[args.model])
+
+        dir = '/media/data1/hewei/test/'
+        N = len(list(os.listdir(dir)))
+        # im1 = cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/data/0cdf5b5d0ce1_05.jpg')
+        # image1 = cv2.cvtColor(im1, cv2.COLOR_BGR2RGB)
+        #
+        # im2=cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/mask/0cdf5b5d0ce1_05_mask.png',cv2.IMREAD_GRAYSCALE)
+        # if image1.shape != cfg.INFER_SIZE:
+        #     image1 = cv2.resize(image1, (cfg.INFER_SIZE[1], cfg.INFER_SIZE[0]))
+        # results1 = net.predict(image1)
+        # results1=np.squeeze(results1)
+        # plt.imshow(results1,cmap='gray')
+        # plt.show()
+        '''Comparison'''
+
+        # overlap_results1 = 0.5 * image1 + 0.5 * results1[0]
+        # vis_im1 = np.concatenate([image1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
+        #
+        # # results1=results1[0][:,:,0]*255
+        # check=results1[0]
+        # plt.figure(figsize=(20, 15))
+        # plt.imshow(vis_im1)
+        # plt.show()
+
+        with open('SUBMISSION.csv', 'a') as f:
+            f.write('img,rle_mask\n')
+            for index, i in enumerate(os.listdir(dir)):
+                img = Image.open(dir + i)
+
+                start = time.time()
+
+                icnet_predict = net.predict(img)
+
+                stop = time.time()
+                mask_array =np.squeeze(icnet_predict)
+
+                plt.imshow(mask_array, cmap='gray')
+                plt.show()
+
+                en = run_length_encode(mask_array)
+                print('{}/{} cost{}s'.format(index, N, str(stop - start)))
+                f.write('{},{}\n'.format(i, en))
+
 
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
-    main(model_log_dir='2018-11-08_13-21-26_restore_nonaug', check_point=19)
+    main(model_log_dir='2018-11-08_18-20-14_restore_nonaug_BCE', check_point=19,mode='inference')
 
