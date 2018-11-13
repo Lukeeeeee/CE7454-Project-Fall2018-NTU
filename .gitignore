@@ -105,7 +105,6 @@ venv.bak/
 .idea/*
 dataset/*
 !dataset/*.py
-
 model/*
 !model/*.py
 !model/README.md
@@ -136,6 +135,8 @@ data/*
 !data/README.md
 !data/list
 #/test/TernausNet/
+!data/tnet_offline_validation_set_res/*.py
+
 /log/2018-11-09_14-31-21_/
 /log/2018-11-03_14-04-58_/
 /log/2018-11-06_20-49-05_/
@@ -147,4 +148,3 @@ data/*
 /log/2018-11-05_20-08-38_/
 /log/2018-11-04_14-42-15_/
 
-!data/tnet_offline_validation_set_res/*.py
