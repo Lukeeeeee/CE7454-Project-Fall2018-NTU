@@ -1,7 +1,15 @@
+import os
+import sys
+
+CURRENT_PATH = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(CURRENT_PATH)
+PAR_PATH = os.path.abspath(os.path.join(CURRENT_PATH, os.pardir))
+sys.path.append(PAR_PATH)
 import argparse
 
 import tensorflow as tf
 from tqdm import trange
+from utils.image_reader import _image_mirroring, _random_crop_and_pad_image_and_labels, _image_scaling
 
 from utils.config import Config
 from utils.image_reader import ImageReader
@@ -10,7 +18,6 @@ import os
 from log import LOG_PATH
 import numpy as np
 from src.util import save_pred_to_image
-
 '''add'''
 import argparse
 import tensorflow as tf
@@ -22,6 +29,10 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from tqdm import trange
 from utils.config import Config
+from test.TernausNet import Example
+import glob
+from data.tnet_offline_validation_set_res import TNET_LOG_PATH
+import torch
 
 # mapping different model
 model_config = {'train': ICNet, 'trainval': ICNet, 'train_bn': ICNet_BN, 'trainval_bn': ICNet_BN, 'others': ICNet_BN}
@@ -33,14 +44,14 @@ def _extract_mean_revert(img, img_mean, swap_channel=False):
     img += img_mean
     if swap_channel:
         img_b = img[:, :, 0]
-        img_r = img[:, :, 1]
-        img_g = img[:, :, 2]
+        img_g = img[:, :, 1]
+        img_r = img[:, :, 2]
 
         img_b = img_b[:, :, np.newaxis]
         img_r = img_r[:, :, np.newaxis]
         img_g = img_g[:, :, np.newaxis]
 
-        img = np.concatenate((img_b, img_r, img_g), axis=2)
+        img = np.concatenate((img_r, img_g, img_b), axis=2)
 
     return img
 
@@ -63,13 +74,15 @@ def get_arguments():
 
 
 def main(model_log_dir, check_point):
+    tf.reset_default_graph()
+
     args = get_arguments()
     cfg = Config(dataset=args.dataset,
                  is_training=False,
                  filter_scale=args.filter_scale,
                  eval_path_log=os.path.join(LOG_PATH, model_log_dir))
     cfg.model_paths['others'] = os.path.join(LOG_PATH, model_log_dir, 'model.ckpt-%d' % check_point)
-    # cfg.display()
+
     model = model_config[args.model]
 
     reader = ImageReader(cfg=cfg, mode='eval')
@@ -84,6 +97,21 @@ def main(model_log_dir, check_point):
     gt = tf.cast(tf.gather(label_flatten, indices), tf.int32)
     pred = tf.gather(pred_flatten, indices)
 
+    tnet_result = np.load(file=os.path.join(TNET_LOG_PATH, 'valid.npy'))
+
+    weight_list = [[0.4, 0.6], [0.5, 0.5], [0.6, 0.4]]
+    ensemble_pred_list = []
+    ensemble_input = tf.placeholder(dtype=pred.dtype, shape=[None])
+    for weight in weight_list:
+        ensemble_pred = tf.split(net.logits_up, 2, axis=len(net.logits_up.get_shape()) - 1)[1] * weight[0]
+        ensemble_pred = tf.gather(tf.reshape(ensemble_pred, [-1, ]), indices)
+        ensemble_pred = ensemble_pred + tf.cast(ensemble_input, tf.float32) * tf.constant(weight[1])
+        ensemble_pred = tf.round(ensemble_pred)
+        ensemble_pred_list.append(ensemble_pred)
+
+    ensemble_mIoU_list = []
+
+    ensemble_update_op_list = []
     if cfg.dataset == 'ade20k':
         pred = tf.add(pred, tf.constant(1, dtype=tf.int64))
         mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'] + 1)
@@ -91,6 +119,11 @@ def main(model_log_dir, check_point):
         mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
     elif cfg.dataset == 'others':
         mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
+        for ensemble_pred in ensemble_pred_list:
+            ensemble_mIoU, ensemble_update_op = tf.metrics.mean_iou(predictions=ensemble_pred, labels=gt,
+                                                                    num_classes=cfg.param['num_classes'])
+            ensemble_mIoU_list.append(ensemble_mIoU)
+            ensemble_update_op_list.append(ensemble_update_op)
 
     net.create_session()
     net.restore(cfg.model_paths[args.model])
@@ -105,62 +138,103 @@ def main(model_log_dir, check_point):
     # vis_im1 = np.concatenate([im1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
 
     # results1=results1[0][:,:,0]*255
-    # plt.subplot(131)
-    # plt.imshow(im1)
-    # plt.subplot(132)
-    # plt.imshow(im2, cmap='gray')
-    # plt.subplot(133)
-    # plt.imshow(results1, cmap='gray')
-    #
-    # plt.show()
+
+    duration = 0
+    # model = Example.get_model()
 
     for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
-        _, res, input, labels, out = net.sess.run([update_op, pred, net.images, net.labels, net.output])
+        start = time.time()
+        feed_dict = {ensemble_input: tnet_result[i]}
+        _ = net.sess.run(
+            [update_op] + ensemble_update_op_list,
+            feed_dict=feed_dict)
+        end = time.time()
 
-        if i % 50 == 0:
+        duration += (end - start)
 
-            save_pred_to_image(res=res,
-                               shape=cfg.param['eval_size'],
-                               save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
-                               save_name='eval_%d_img.png' % i)
+        if i % 100 == 0:
+            pass
 
-            input = np.squeeze(input)
-            n_input = _extract_mean_revert(input, IMG_MEAN, swap_channel=True)
-            n_input = n_input.astype(np.uint8)
-            input_image = Image.fromarray(n_input, 'RGB')
+            # save_pred_to_image(res=res,
+            #                    shape=cfg.param['eval_size'],
+            #                    save_path=os.path.dirname(cfg.model_paths['others']) + '/eval_img',
+            #                    save_name='eval_%d_img.png' % i)
 
-            res = np.array(np.reshape(res, cfg.param['eval_size']), dtype=np.uint8) * 255
-            res = Image.fromarray(res.astype(np.uint8))
-            labels = np.squeeze(labels) * 255
-            labels = Image.fromarray(labels.astype(np.uint8))
-            fig, ax1 = plt.subplots(figsize=(58, 13))
-            plt.subplot(131)
-            plt.imshow(input_image)
-            plt.axis('off')
 
-            plt.subplot(132)
-            plt.imshow(labels, cmap='gray')
-            plt.axis('off')
 
-            plt.subplot(133)
-            plt.imshow(res, cmap='gray')
-            plt.axis('off')
-            save_comparation_path = os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
-            if os.path.exists(save_comparation_path) is False:
-                os.mkdir(save_comparation_path)
-            plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
-            plt.close()
+            '''res-> network predict either 0 or 1 on each element '''
+            # icnet = np.array(np.reshape(res, cfg.param['eval_size']), dtype=np.uint8) * 255
+            # icnet = Image.fromarray(icnet.astype(np.uint8))
+            # label_sq = np.squeeze(labels)
+            # labels = label_sq * 255
+            # labels = Image.fromarray(labels.astype(np.uint8))
+            #
+            # kmean_res = kmean.extract_mask(input, label_sq)
+            #
+            # fig, ax1 = plt.subplots(figsize=(80, 13))
+            #
+            # plot1=plt.subplot(141)
+            # plot1.set_title("Input Image",fontsize=50)
+            # plt.imshow(input_image)
+            # plt.axis('off')
+            #
+            # plot2=plt.subplot(142)
+            # plot2.set_title("Ground Truth Mask",fontsize=50)
+            # plt.imshow(labels, cmap='gray')
+            # plt.axis('off')
+            #
+            # plot3=plt.subplot(143)
+            # plot3.set_title("Our Result",fontsize=50)
+            # plt.imshow(icnet, cmap='gray')
+            # plt.axis('off')
+            #
+            # # plot4=plt.subplot(144)
+            # # plot4.set_title("TernausNet's Result",fontsize=50)
+            # # plt.imshow(tnet, cmap='gray')
+            # # plt.axis('off')
+            #
+            # plot4 = plt.subplot(144)
+            # plot4.set_title("Ensemble K-Means Result", fontsize=50)
+            # plt.imshow(kmean_res, cmap='gray')
+            # plt.axis('off')
+            # plt.show()
 
+            # save_comparation_path = os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
+            # if os.path.exists(save_comparation_path) is False:
+            #     os.mkdir(save_comparation_path)
+            # plt.savefig(os.path.join(save_comparation_path, 'eval_%d_img.png' % i))
+            # plt.show()
+
+    # TODO fix the mIou which take the ensemble as output: not done yet!
     final_mIou = net.sess.run(mIoU)
+    ensemble_final_mIou_list = net.sess.run(ensemble_mIoU_list)
+    # ensemble_final_mIou = -1.0
 
-    print('mIoU: {}'.format(final_mIou))
+    print('total time:{} mean inference time:{} mIoU: {}'.format(duration,
+                                                                 duration / cfg.param['eval_steps'],
+                                                                 final_mIou))
+    for weight, ensemble_iou in zip(weight_list, ensemble_final_mIou_list):
+        print(weight, ensemble_iou)
 
-    Config.save_to_json(dict={'FINAL_MIOU': float(final_mIou), "EVAL_STEPS": cfg.param['eval_steps']},
+    Config.save_to_json(dict={'FINAL_MIOU': float(final_mIou),
+                              "EVAL_STEPS": cfg.param['eval_steps'],
+                              "ENSEMBLE_WEIGHT": weight_list,
+                              "ENSEMBLE_MIOU": [float(x) for x in ensemble_final_mIou_list]},
                         path=os.path.dirname(cfg.model_paths['others']),
                         file_name='eval.json')
+    sess = tf.get_default_session()
+    if sess:
+        sess._exit__(None, None, None)
 
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+
+    main(model_log_dir='2018-11-08_13-21-26_restore_nonaug', check_point=19)
+
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    main(model_log_dir='', check_point=19)
+    main(model_log_dir='2018-11-12_22-10-58_v2_restore_2018-11-09_21-00-37_random_scale_10_extra_epoch', check_point=9)
+    main(model_log_dir='2018-11-12_23-18-33_v2_restore_2018-11-09_21-00-37_random_mirror_10_extra_epoch', check_point=9)
+    main(model_log_dir='2018-11-13_00-24-32_v2_restore_2018-11-09_21-00-37_random_scale_5_extra_epoch', check_point=4)
+    main(model_log_dir='2018-11-13_00-58-03_v2_restore_2018-11-09_21-00-37_random_mirror_5_extra_epoch', check_point=4)
