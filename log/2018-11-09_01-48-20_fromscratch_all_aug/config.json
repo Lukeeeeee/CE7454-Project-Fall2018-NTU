@@ -13,7 +13,7 @@
     ],
     "INFER_SIZE": [
         1280,
-        1920,
+        1918,
         3
     ],
     "Kaggle_DATA_DIR": "/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data",
@@ -26,10 +26,10 @@
     "MOMENTUM": 0.9,
     "N_WORKERS": 8,
     "POWER": 0.9,
-    "RANDOM_SEED": 1957124367,
+    "RANDOM_SEED": 225715455,
     "SAVE_NUM_IMAGES": 4,
     "SAVE_PRED_EVERY": 2,
-    "SNAPSHOT_DIR": "/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/log/2018-11-09_01-48-20_",
+    "SNAPSHOT_DIR": "/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/log/2018-11-13_21-22-54_",
     "TRAINING_EPOCHS": 20,
     "TRAINING_SIZE": [
         720,
