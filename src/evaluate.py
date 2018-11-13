@@ -1,3 +1,10 @@
+import os
+import sys
+
+CURRENT_PATH = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(CURRENT_PATH)
+PAR_PATH = os.path.abspath(os.path.join(CURRENT_PATH, os.pardir))
+sys.path.append(PAR_PATH)
 import argparse
 
 import tensorflow as tf
@@ -23,6 +30,7 @@ from PIL import Image
 from tqdm import trange
 from utils.config import Config
 from test.TernausNet import Example
+import glob
 from data.tnet_offline_validation_set_res import TNET_LOG_PATH
 import kmean
 import torch
@@ -105,9 +113,21 @@ def main(model_log_dir, check_point):
         gt = tf.cast(tf.gather(label_flatten, indices), tf.int32)
         pred = tf.gather(pred_flatten, indices)
 
-    net.create_session()
-    net.restore(cfg.model_paths[args.model])
+    tnet_result = np.load(file=os.path.join(TNET_LOG_PATH, 'valid.npy'))
 
+    weight_list = [[0.4, 0.6], [0.5, 0.5], [0.6, 0.4]]
+    ensemble_pred_list = []
+    ensemble_input = tf.placeholder(dtype=pred.dtype, shape=[None])
+    for weight in weight_list:
+        ensemble_pred = tf.split(net.logits_up, 2, axis=len(net.logits_up.get_shape()) - 1)[1] * weight[0]
+        ensemble_pred = tf.gather(tf.reshape(ensemble_pred, [-1, ]), indices)
+        ensemble_pred = ensemble_pred + tf.cast(ensemble_input, tf.float32) * tf.constant(weight[1])
+        ensemble_pred = tf.round(ensemble_pred)
+        ensemble_pred_list.append(ensemble_pred)
+
+    ensemble_mIoU_list = []
+
+    ensemble_update_op_list = []
     if cfg.dataset == 'ade20k':
         pred = tf.add(pred, tf.constant(1, dtype=tf.int64))
         mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'] + 1)
@@ -121,26 +141,27 @@ def main(model_log_dir, check_point):
             ensemble_mIoU_list.append(ensemble_mIoU)
             ensemble_update_op_list.append(ensemble_update_op)
 
+    # im1 = cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/data/0cdf5b5d0ce1_05.jpg')
+    # im2=cv2.imread('/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/train/mask/0cdf5b5d0ce1_05_mask.png',cv2.IMREAD_GRAYSCALE)
+    # if im1.shape != cfg.INFER_SIZE:
+    #     im1 = cv2.resize(im1, (cfg.INFER_SIZE[1], cfg.INFER_SIZE[0]))
+    #
+    # results1 = net.predict(im1)
+    # overlap_results1 = 0.5 * im1 + 0.5 * results1[0]
+    # vis_im1 = np.concatenate([im1 / 255.0, results1[0] / 255.0, overlap_results1 / 255.0], axis=1)
 
-        if cfg.dataset == 'ade20k':
-            pred = tf.add(pred, tf.constant(1, dtype=tf.int64))
-            mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'] + 1)
-        elif cfg.dataset == 'cityscapes':
-            mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
-        elif cfg.dataset == 'others':
-            mIoU, update_op = tf.metrics.mean_iou(predictions=pred, labels=gt, num_classes=cfg.param['num_classes'])
+    # results1=results1[0][:,:,0]*255
 
-        net.create_session()
-        net.restore(cfg.model_paths[args.model])
+    duration = 0
+    # model = Example.get_model()
 
-        duration=0
-        if mode=='eval':
-
-            for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
-
-                start=time.time()
-                _,res, input,labels,out = net.sess.run([update_op,pred, net.images,net.labels,net.output])
-                end=time.time()
+    for i in trange(cfg.param['eval_steps'], desc='evaluation', leave=True):
+        start = time.time()
+        feed_dict = {ensemble_input: tnet_result[i]}
+        _ = net.sess.run(
+            [update_op] + ensemble_update_op_list,
+            feed_dict=feed_dict)
+        end = time.time()
 
                 duration+=(end-start)
 
@@ -197,9 +218,6 @@ def main(model_log_dir, check_point):
 
             plt.show()
 
-
-
-
             # save_comparation_path = os.path.dirname(cfg.model_paths['others']) + '/eval_compare'
             # if os.path.exists(save_comparation_path) is False:
             #     os.mkdir(save_comparation_path)
@@ -208,9 +226,21 @@ def main(model_log_dir, check_point):
 
             final_mIou = net.sess.run(mIoU)
             print('total time:{} mean inference time:{} mIoU: {}'.format(duration,duration/cfg.param['eval_steps'],final_mIou))
+    # TODO fix the mIou which take the ensemble as output: not done yet!
+    final_mIou = net.sess.run(mIoU)
+    ensemble_final_mIou_list = net.sess.run(ensemble_mIoU_list)
+    # ensemble_final_mIou = -1.0
 
-    Config.save_to_json(dict={'FINAL_MIOU': float(final_mIou), "EVAL_STEPS": cfg.param['eval_steps']},
+    print('total time:{} mean inference time:{} mIoU: {}'.format(duration,
+                                                                 duration / cfg.param['eval_steps'],
+                                                                 final_mIou))
+    for weight, ensemble_iou in zip(weight_list, ensemble_final_mIou_list):
+        print(weight, ensemble_iou)
 
+    Config.save_to_json(dict={'FINAL_MIOU': float(final_mIou),
+                              "EVAL_STEPS": cfg.param['eval_steps'],
+                              "ENSEMBLE_WEIGHT": weight_list,
+                              "ENSEMBLE_MIOU": [float(x) for x in ensemble_final_mIou_list]},
                         path=os.path.dirname(cfg.model_paths['others']),
                         file_name='eval.json')
     sess = tf.get_default_session()
