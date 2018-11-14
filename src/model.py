@@ -1,4 +1,5 @@
 import tensorflow as tf
+
 from src.network import Network
 from utils.image_reader import _infer_preprocess
 from utils.visualize import decode_labels
