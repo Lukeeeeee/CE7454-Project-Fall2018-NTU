@@ -55,8 +55,6 @@ def plot_single_loss(log_folder, single=True, avg=False):
 
 
 def plot_valid_loss(log_folder, single=False, avg=False):
-    if log_folder != "./log/2018-11-07_19-37-16__v2_DEFAULT_CONFIG_LAMBDA_0.160000_0.400000_1.000000":
-        return
     loss_path = os.path.join(log_folder, 'loss.json')
     x, y = _retrieve_info(loss_path, single, avg=avg)
     if avg:
@@ -213,9 +211,9 @@ def get_info_from_loss_list(test_data, avg=False):
         avg_v_losses.append(avg_v_loss)
 
     if avg:
-        return x_epoch, (avg_losses, 'Average Loss'), (avg_v_losses, 'Average Validation Loss')
+        return x_epoch, (avg_losses, 'Average Training Loss'), (avg_v_losses, 'Average Validation Loss')
     else:
-        return x, (y_loss, 'Loss Value'), (y_valid_loss, "Validation Loss"),
+        return x, (y_loss, 'Training Loss'), (y_valid_loss, "Validation Loss"),
 
 
 
@@ -223,12 +221,14 @@ def main():
     # Plot three type of plot
     log_folders = get_log_folder("./log")
     for path in log_folders:
+        print("Plotting %s" % path)
         plot_single_loss(path, avg=True)
         plot_valid_loss(path, avg=True)
         plot_single_loss(path, avg=False)
         plot_valid_loss(path, avg=False)
     lambda_folders, epoch_folders, lr_folders = split_log_folders(log_folders)
 
+    print("Plotting Miou")
     plot_miou(lambda_folders, 'lambda')
     plot_miou(epoch_folders, 'epoch')
     plot_miou(lr_folders, 'lr')

@@ -1,12 +1,13 @@
-import numpy as np
-import os
-from data import DATA_PATH
-from src import SRC_PATH
-from log.model import MODEL_PATH
-from log import LOG_PATH
-from data.list import LIST_PATH
-import time
 import json
+import os
+import time
+
+import numpy as np
+
+from data import DATA_PATH
+from data.list import LIST_PATH
+from log import LOG_PATH
+from log.model import MODEL_PATH
 
 
 class Config(object):
@@ -71,7 +72,6 @@ class Config(object):
                     'data_dir': Kaggle_DATA_DIR}
 
     ## You can modify following lines to train different training configurations.
-    INFER_SIZE = [1280, 1918, 3]
     TRAINING_SIZE = [720, 720]
 
     # previously 60001
@@ -94,7 +94,7 @@ class Config(object):
     LAMBDA3 = 1.0
 
     def __init__(self, dataset, is_training=False, filter_scale=1, random_scale=False, random_mirror=False,
-                 log_path_end='', eval_path_log=None):
+                 log_path_end='', eval_path_log=None, INFER_SIZE=None):
         print('Setup configurations...')
         if eval_path_log:
             self.SNAPSHOT_DIR = eval_path_log
@@ -115,6 +115,7 @@ class Config(object):
         self.random_mirror = random_mirror
         self.is_training = is_training
         self.filter_scale = filter_scale
+        self.INFER_SIZE = INFER_SIZE
 
     def display(self):
         """Display Configuration values."""
@@ -137,7 +138,7 @@ class Config(object):
                     log_config[k] = v
 
         print("\n")
-        self.save_to_json(dict=log_config, path=os.path.join(self.SNAPSHOT_DIR, 'config.json'),mode='eval')
+        self.save_to_json(dict=log_config, path=os.path.join(self.SNAPSHOT_DIR, 'config.json'), mode='eval')
 
     @staticmethod
     def load_json(file_path):
@@ -146,10 +147,10 @@ class Config(object):
             return res
 
     @staticmethod
-    def save_to_json(mode,dict, path, file_name=None):
+    def save_to_json(mode, dict, path, file_name=None):
         if file_name is not None:
             path = os.path.join(path, file_name)
-        if mode=='eval':
+        if mode == 'eval':
 
             with open(path, 'w') as f:
                 json.dump(obj=dict, fp=f, indent=4, sort_keys=True)
@@ -163,8 +164,5 @@ class Config(object):
             for i in dict:
                 model[i] = dict[i]
 
-            jsObj = json.dumps(model)
-
             with open(path, "w") as fw:
-                fw.write(jsObj)
-                fw.close()
+                json.dump(obj=model, fp=fw, indent=4, sort_keys=True)

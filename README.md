@@ -1,22 +1,27 @@
 # CE7454_Project_Fall2018_NTU
-CE7454 Project for Deep Learning for Data Science  Fall 2018 NTU 
+CE7454 Project for Deep Learning for Data Science Fall 2018 NTU
 
+[Report](report/report.ipynb)
 
-### Setup
+### Environment Set-up
 
-1. Clone this repo into your local PC
-2. Prepare your dataset carvana-image-masking-challenge into `/dataset` ([kaggle API](https://github.com/Kaggle/kaggle-api) is recommended)
-  - a. `pip install kaggle`
-  - b. Add API credentials 
-  From https://www.kaggle.com/<username>/account -> select 'Create API Token' -> Place this file in the location `~/.kaggle/kaggle.json` -> 
-  In `~/.bashrc`, add this three line: 
-  
-  ```bash
-export KAGGLE_CONFIG_DIR=$KAGGLE_CONFIG_DIR/kaggle.json
-export KAGGLE_USERNAME=<username>
-export KAGGLE_KEY=your_key
+```bash
+git clone https://github.com/Lukeeeeee/CE7454_Project_Fall2018_NTU
+cd CE7454_Project_Fall2018_NTU
+conda env create environment.yml
+source activate dlproject
 ```
-  ->`source ~/.bashrc`
-  - c. ```bash
-  kaggle competitions download -c carvana-image-masking-challenge```
-  - d. Separate the dataset according to `train.csv` `valid.csv` `test.csv`
+
+### Download dataset
+
+1. Install [kaggle API](https://github.com/Kaggle/kaggle-api): `pip install kaggle`
+3. Create API token from `https://www.kaggle.com/<username>/account` and save the file to `~/.kaggle/kaggle.json` 
+4. Download the Carvana dataset: `kaggle competitions download -c carvana-image-masking-challenge`
+5. Unzip the dataset into to `train.csv` `valid.csv` `test.csv`
+  
+### Running the crawler
+
+```bash
+cd crawler
+scrapy crawl cars
+```
