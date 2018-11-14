@@ -1,7 +1,9 @@
 import os
-import pandas as pd
 import shutil
+
+import pandas as pd
 from PIL import Image
+
 from data import DATA_PATH
 
 f = open("../valid.csv", "rb")
