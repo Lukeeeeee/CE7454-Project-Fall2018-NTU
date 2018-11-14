@@ -1,17 +1,20 @@
+import os
+
 import numpy as np
 import tensorflow as tf
-import os
 
 DEFAULT_PADDING = 'VALID'
 DEFAULT_DATAFORMAT = 'NHWC'
 layer_name = []
-BN_param_map = {'scale':    'gamma',
-                'offset':   'beta',
+BN_param_map = {'scale': 'gamma',
+                'offset': 'beta',
                 'variance': 'moving_variance',
-                'mean':     'moving_mean'}
-                
+                'mean': 'moving_mean'}
+
+
 def layer(op):
-    '''Decorator for composable network layers.'''
+    """Decorator for composable network layers."""
+
     def layer_decorated(self, *args, **kwargs):
         # Automatically set a name if not provided.
         name = kwargs.setdefault('name', self.get_unique_name(op.__name__))
@@ -43,7 +46,7 @@ class Network(object):
         self.terminals = []
         # Mapping from layer names to layers
         self.layers = dict(inputs)
-        
+
         self.trainable = trainable
 
         # Switch variable for dropout
@@ -58,46 +61,46 @@ class Network(object):
         self.setup()
 
     def setup(self, is_training):
-        '''Construct the network. '''
+        """Construct the network. """
         raise NotImplementedError('Must be implemented by the subclass.')
-    
+
     def create_session(self):
         # Set up tf session and initialize variables.
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
-        
+
         global_init = tf.global_variables_initializer()
         local_init = tf.local_variables_initializer()
-        
+
         self.sess = tf.Session(config=config)
         self.sess.run([global_init, local_init])
-        
+
     def restore(self, data_path, var_list=None):
         if data_path.endswith('.npy'):
             self.load_npy(data_path, self.sess)
         else:
             loader = tf.train.Saver(var_list=tf.global_variables())
             loader.restore(self.sess, data_path)
-        
+
         print('Restore from {}'.format(data_path))
-    
+
     def save(self, saver, save_dir, step):
         model_name = 'model.ckpt'
         checkpoint_path = os.path.join(save_dir, model_name)
-        
+
         if not os.path.exists(save_dir):
-           os.makedirs(save_dir)
+            os.makedirs(save_dir)
 
         saver.save(self.sess, checkpoint_path, global_step=step)
         print('The checkpoint has been created, step: {}'.format(step))
 
     ## Restore from .npy
     def load_npy(self, data_path, session, ignore_missing=True):
-        '''Load network weights.
+        """Load network weights.
         data_path: The path to the numpy-serialized network weights
         session: The current TensorFlow session
         ignore_missing: If true, serialized weights for missing layers are ignored.
-        '''
+        """
         data_dict = np.load(data_path, encoding='latin1').item()
         for op_name in data_dict:
             with tf.variable_scope(op_name, reuse=True):
@@ -108,16 +111,15 @@ class Network(object):
 
                         var = tf.get_variable(param_name)
                         if 'conv6_cls' not in var.name:
-
                             session.run(var.assign(data))
                     except ValueError:
                         if not ignore_missing:
                             raise
 
     def feed(self, *args):
-        '''Set the input(s) for the next operation by replacing the terminal nodes.
+        """Set the input(s) for the next operation by replacing the terminal nodes.
         The arguments can be either layer names or the actual layers.
-        '''
+        """
         assert len(args) != 0
         self.terminals = []
         for fed_layer in args:
@@ -130,28 +132,30 @@ class Network(object):
         return self
 
     def get_output(self):
-        '''Returns the current network output.'''
+        """Returns the current network output."""
         return self.terminals[-1]
 
     def get_unique_name(self, prefix):
-        '''Returns an index-suffixed unique name for the given prefix.
+        """Returns an index-suffixed unique name for the given prefix.
         This is used for auto-generating layer names based on the type-prefix.
-        '''
+        """
         ident = sum(t.startswith(prefix) for t, _ in self.layers.items()) + 1
         return '%s_%d' % (prefix, ident)
 
     def make_var(self, name, shape):
-        '''Creates a new TensorFlow variable.'''
+        """Creates a new TensorFlow variable."""
         return tf.get_variable(name, shape, trainable=self.trainable)
 
     def get_layer_name(self):
         return layer_name
+
     def validate_padding(self, padding):
-        '''Verifies that the padding is one of the supported ones.'''
+        """Verifies that the padding is one of the supported ones."""
         assert padding in ('SAME', 'VALID')
+
     @layer
     def zero_padding(self, input, paddings, name):
-        pad_mat = np.array([[0,0], [paddings, paddings], [paddings, paddings], [0, 0]])
+        pad_mat = np.array([[0, 0], [paddings, paddings], [paddings, paddings], [0, 0]])
         return tf.pad(input, paddings=pad_mat, name=name)
 
     @layer
@@ -175,7 +179,7 @@ class Network(object):
         if 'out' not in name and 'cls' not in name:
             c_o *= self.filter_scale
 
-        convolve = lambda i, k: tf.nn.conv2d(i, k, [1, s_h, s_w, 1], padding=padding,data_format=DEFAULT_DATAFORMAT)
+        convolve = lambda i, k: tf.nn.conv2d(i, k, [1, s_h, s_w, 1], padding=padding, data_format=DEFAULT_DATAFORMAT)
         with tf.variable_scope(name) as scope:
             kernel = self.make_var('weights', shape=[k_h, k_w, c_i, c_o])
             output = convolve(input, kernel)
@@ -236,11 +240,11 @@ class Network(object):
         self.validate_padding(padding)
 
         output = tf.nn.avg_pool(input,
-                              ksize=[1, k_h, k_w, 1],
-                              strides=[1, s_h, s_w, 1],
-                              padding=padding,
-                              name=name,
-                              data_format=DEFAULT_DATAFORMAT)
+                                ksize=[1, k_h, k_w, 1],
+                                strides=[1, s_h, s_w, 1],
+                                padding=padding,
+                                name=name,
+                                data_format=DEFAULT_DATAFORMAT)
         return output
 
     @layer
@@ -259,7 +263,7 @@ class Network(object):
     @layer
     def add(self, inputs, name):
         inputs[0] = tf.image.resize_bilinear(inputs[0], size=tf.shape(inputs[1])[1:3])
-        
+
         return tf.add_n(inputs, name=name)
 
     @layer
@@ -289,17 +293,18 @@ class Network(object):
             # in TensorFlow's NHWC ordering (unlike Caffe's NCHW).
             if input_shape[1] == 1 and input_shape[2] == 1:
                 input = tf.squeeze(input, squeeze_dims=[1, 2])
-            else:        return tf.nn.softmax(input, name)
+            else:
+                return tf.nn.softmax(input, name)
 
     @layer
     def batch_normalization(self, input, name, scale_offset=True, relu=False):
         output = tf.layers.batch_normalization(
-                    input,
-                    momentum=0.95,
-                    epsilon=1e-5,
-                    training=self.is_training,
-                    name=name
-                )
+            input,
+            momentum=0.95,
+            epsilon=1e-5,
+            training=self.is_training,
+            name=name
+        )
 
         if relu:
             output = tf.nn.relu(output)

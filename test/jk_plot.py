@@ -37,7 +37,6 @@ color_list = ['b', 'r', 'g', 'c', 'm', 'y', 'k', 'cyan', 'plum', 'darkgreen', 'd
 
 
 def plot_single_loss(log_folder, single=True, avg=False):
-
     loss_path = os.path.join(log_folder, 'loss.json')
     x, y = _retrieve_info(loss_path, single, avg=avg)
     if avg:
@@ -156,10 +155,9 @@ def plot_miou(log_folders, folder_type):
                     log_dir='./log')
 
 
-
 def plot_bar_chart(x, y, params, title, x_label, y_label, save_name, log_dir, marker='*', legend_title=''):
     # rcParams['figure.figsize'] = 4, 3
-    rcParams['figure.figsize'] = 14, 6
+    rcParams['figure.figsize'] = 8, 6
     sns.set_style("darkgrid")
     # plt.figure(fig_num)
     plt.title(title)
@@ -181,8 +179,9 @@ def plot_bar_chart(x, y, params, title, x_label, y_label, save_name, log_dir, ma
 
     if save_name:
         plt.savefig(os.path.join(log_dir, save_name + '.jpg'))
-        plt.savefig(os.path.join(log_dir, save_name + '.pdf'))
-    plt.show()
+        # plt.savefig(os.path.join(log_dir, save_name + '.pdf'))
+    # plt.show()
+
 
 def get_info_from_loss_list(test_data, avg=False):
     x = []
@@ -216,23 +215,21 @@ def get_info_from_loss_list(test_data, avg=False):
         return x, (y_loss, 'Training Loss'), (y_valid_loss, "Validation Loss"),
 
 
-
 def main():
     # Plot three type of plot
-    log_folders = get_log_folder("./log")
+    log_folders = get_log_folder("/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/log/")
     for path in log_folders:
         print("Plotting %s" % path)
-        plot_single_loss(path, avg=True)
-        plot_valid_loss(path, avg=True)
-        plot_single_loss(path, avg=False)
-        plot_valid_loss(path, avg=False)
+        # plot_single_loss(path, avg=True)
+        # plot_valid_loss(path, avg=True)
+        # plot_single_loss(path, avg=False)
+        # plot_valid_loss(path, avg=False)
     lambda_folders, epoch_folders, lr_folders = split_log_folders(log_folders)
 
     print("Plotting Miou")
     plot_miou(lambda_folders, 'lambda')
     plot_miou(epoch_folders, 'epoch')
     plot_miou(lr_folders, 'lr')
-
 
 
 def split_log_folders(log_folders):
@@ -250,6 +247,7 @@ def split_log_folders(log_folders):
             ef.append(item)
     return lf, ef, lrf
 
+
 def get_log_folder(main_dir):
     folders = []
     for f in os.listdir(main_dir):
@@ -260,4 +258,17 @@ def get_log_folder(main_dir):
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    x = [1, 2, 3, 4]
+    y = [0.88124263, 0.9297373296069]
+    params = ['IC-net', 'Ensemble']
+    legend_title = ''
+    save_name = 'ensemble'
+
+    plot_bar_chart(x, y, params,
+                   title='Ensemble Experiments',
+                   x_label=legend_title,
+                   y_label='MIOU',
+                   save_name=save_name,
+                   log_dir='/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/report_fig',
+                   legend_title=legend_title)

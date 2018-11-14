@@ -1,12 +1,9 @@
 import cv2
 import os
 import torch
-from torch import nn
-from test.TernausNet.unet_models import unet11
-from pathlib import Path
+from src.TernausNet.unet_models import unet11
 from torch.nn import functional as F
 from torchvision.transforms import ToTensor, Normalize, Compose
-from PIL import Image
 import numpy as np
 from time import time
 

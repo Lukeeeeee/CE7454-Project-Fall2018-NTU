@@ -172,6 +172,7 @@ if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     os.environ['CUDA_VISIBLE_DEVICES'] = '1'
     dir = '/media/data1/hewei/test/'
-    test_image='/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/valid/data/0ce66b539f52_01.jpg'
-    main(model_log_dir='2018-11-08_13-21-26_restore_nonaug', check_point=19,mode='inference',img_path=test_image,testdir=dir,submit=False
+    test_image = '/home/wei005/PycharmProjects/CE7454_Project_Fall2018_NTU/data/Kaggle/valid/data/0ce66b539f52_01.jpg'
+    main(model_log_dir='2018-11-08_13-21-26_restore_nonaug', check_point=19, mode='inference', img_path=test_image,
+         testdir=dir, submit=False
          )

@@ -1,30 +1,15 @@
-import argparse
-
-import tensorflow as tf
-from tqdm import trange
-from utils.image_reader import _image_mirroring, _random_crop_and_pad_image_and_labels, _image_scaling
-from utils.config import Config
 from utils.image_reader import ImageReader
 from src.model import ICNet, ICNet_BN
 import os
 from log import LOG_PATH
-import numpy as np
-from src.util import save_pred_to_image
 
 '''add'''
 import argparse
 import tensorflow as tf
 import numpy as np
-import cv2
 import time
-from utils.visualize import decode_labels
-from data import DATA_PATH
-import matplotlib.pyplot as plt
-from PIL import Image
 from tqdm import trange
 from utils.config import Config
-from test.TernausNet import Example
-import torch
 from data.tnet_offline_validation_set_res import TNET_LOG_PATH
 
 # mapping different model
