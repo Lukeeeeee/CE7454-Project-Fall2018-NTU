@@ -1,10 +1,10 @@
-import os
-from matplotlib import pyplot as plt
-from skimage import io
-import numpy as np
-from matplotlib import style
 import math
-from mpl_toolkits.mplot3d import Axes3D
+import os
+
+import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib import style
+from skimage import io
 
 
 def perform_analysis(type_, path):
@@ -12,13 +12,12 @@ def perform_analysis(type_, path):
     Main Method
     :return:
     """
-    type_ = type_ # "valid+test" # [Test+Valid, Train]
+    type_ = type_  # "valid+test" # [Test+Valid, Train]
     print("Processing Dataset of %s" % type_)
     channel = ['r', 'g', 'b']
 
     img_ids, means, stds, vars, avg_pixel = examine_train(type_, path)
     return img_ids, means, stds, vars, avg_pixel
-
 
     # plot_sb(img_ids, means, title="Mean", chart_type="RGB Mean", type_=type_)
     # plot_sb(img_ids, stds, title="Standard Deviation", chart_type="RGB Standard Deviation", type_=type_)
@@ -45,13 +44,15 @@ def plot_car_percentage(type_, path):
         total_cell = im.shape[0] * im.shape[1]
         car_label = np.count_nonzero(im)
         zero = total_cell - car_label
-        car_percent = car_label/float(total_cell) * 100
+        car_percent = car_label / float(total_cell) * 100
         img_ids.append(count)
         car_percents.append(car_percent)
         count += 1
     # print("Creating Graph for Car Percentage, Length of Labels and Y: %i, %i" % (len(img_ids), len(car_percents)))
-    _plot_bar_chart(img_ids, car_percents, 'Car Percentage in the Image (%s) ' % type_, type_, "Car Percentage in the Image", range=True, c='.')
-    _plot_scatter_chart(img_ids, car_percents, 'Car Percentage in the Image (%s) ' % type_, type_, "Car Percentage in the Image", range=True, c='.')
+    _plot_bar_chart(img_ids, car_percents, 'Car Percentage in the Image (%s) ' % type_, type_,
+                    "Car Percentage in the Image", range=True, c='.')
+    _plot_scatter_chart(img_ids, car_percents, 'Car Percentage in the Image (%s) ' % type_, type_,
+                        "Car Percentage in the Image", range=True, c='.')
     _plot_histogram(img_ids, car_percents, "Car Percentage Histogram (%s)" % (type_), type_, '', range, c='.')
     # print("\n######################################################################################################\n")
 
@@ -66,7 +67,7 @@ def examine_train(type_, path):
     vars = []
     avg_pixel = []
     total_rgb = ""
-    train_folder = os.path.join(path,'data')
+    train_folder = os.path.join(path, 'data')
     len_train = len(os.listdir(train_folder))
     # print("%s, %i" % (train_folder, len_train))
     count = 0
@@ -83,7 +84,7 @@ def examine_train(type_, path):
         rgb_std = np.std(im, axis=0)
         rgb_std = np.std(rgb_std, axis=0)
 
-        rgb_vars = im.transpose(2,0,1).reshape(3,-1)
+        rgb_vars = im.transpose(2, 0, 1).reshape(3, -1)
         rgb_vars = np.var(rgb_vars, axis=1)
 
         means.append(rgb_mean)
@@ -141,6 +142,7 @@ def plot_sb(label, ys, title="", chart_type="", type_='', range=False):
     _plot_histogram(index, bs, 'B %s Channel Histogram(%s)' % (title, type_), type_, chart_type, range, c='b')
     # print("\n######################################################################################################\n")
 
+
 def _plot_histogram(index, rgbs, title, type_, chart_type, range, c):
     bins = np.linspace(math.ceil(min(rgbs)),
                        math.floor(max(rgbs)),
@@ -152,7 +154,7 @@ def _plot_histogram(index, rgbs, title, type_, chart_type, range, c):
     plt.title(title)
     plt.xlabel('Bins')
     plt.ylabel('Count')
-    file_out = "./charts/" + type_.lower() + "/" + c +"/histogram_" + title + ".png"
+    file_out = "./charts/" + type_.lower() + "/" + c + "/histogram_" + title + ".png"
     # plt.savefig(file_out, dpi=500)
     plt.show();
     # print("Histogram for [%s] stored in %s" % (title, file_out))
@@ -170,7 +172,7 @@ def _plot_bar_chart(index, rgbs, title, type_, chart_type, range, c):
     plt.ylabel(chart_type + ' Values', fontsize=5)
     # plt.xticks(index, label, fontsize=5, rotation=90)
     plt.title(title)
-    file_out = "./charts/" + type_.lower() + "/" + c +"/barchart_" + title + ".png"
+    file_out = "./charts/" + type_.lower() + "/" + c + "/barchart_" + title + ".png"
     # plt.savefig(file_out, dpi=500)
     plt.show();
     # print("Bar Chart for [%s] stored in %s" % (title, file_out))
@@ -195,10 +197,11 @@ def _plot_scatter_chart(index, rgbs, title, type_, chart_type, range, c):
     plt.xlabel('Image ID', fontsize=5)
     plt.ylabel(chart_type + ' Values', fontsize=5)
     plt.title(title)
-    file_out = "./charts/" + type_.lower() + "/" + c +"/scatterplot_" + title + ".png"
+    file_out = "./charts/" + type_.lower() + "/" + c + "/scatterplot_" + title + ".png"
     # plt.savefig(file_out, dpi=500)
     # print("Scatter Plot for [%s] stored in %s" % (title, file_out))
     plt.show();
+
 
 def plot_3d_bar_chart(avg_pixel, title, type_):
     """
@@ -228,13 +231,12 @@ def _plot_3d(x3, y3, z, title, type_, c):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     ax.plot_trisurf(y3, x3, z, cmap=plt.cm.viridis, linewidth=0.2)
-    ax.set_title("Average "+ c + " Value for Each Pixel")
+    ax.set_title("Average " + c + " Value for Each Pixel")
     ax.set_xlabel("X-Axis")
     ax.set_ylabel("Y-Axis")
-    ax.set_zlabel("Average "+ c + " Values")
+    ax.set_zlabel("Average " + c + " Values")
     file_out = "./charts/" + type_.lower() + "/" + c.lower() + "/" + title + ".png"
     # plt.savefig(file_out, dpi=500)
 
     # print("3D Plot for [%s] stored in %s" % (title, file_out))
     plt.show();
-
