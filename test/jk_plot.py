@@ -55,8 +55,6 @@ def plot_single_loss(log_folder, single=True, avg=False):
 
 
 def plot_valid_loss(log_folder, single=False, avg=False):
-    if log_folder != "./log/2018-11-07_19-37-16__v2_DEFAULT_CONFIG_LAMBDA_0.160000_0.400000_1.000000":
-        return
     loss_path = os.path.join(log_folder, 'loss.json')
     x, y = _retrieve_info(loss_path, single, avg=avg)
     if avg:
