@@ -101,7 +101,7 @@ def unet11(pretrained=False, **kwargs):
     import os
 
     if pretrained == 'carvana':
-        state = torch.load(os.path.join(TNET_PATH, 'TernausNet.pt'))
+        state = torch.load(os.path.join(TNET_PATH, 'TernausNet.pt'),map_location='cpu')
         model.load_state_dict(state['model'])
     return model
 

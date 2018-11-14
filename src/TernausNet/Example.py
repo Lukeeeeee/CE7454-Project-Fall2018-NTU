@@ -13,6 +13,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 def get_model():
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = unet11(pretrained='carvana')
     model.eval()
     return model.to(device)
