@@ -37,8 +37,7 @@ color_list = ['b', 'r', 'g', 'c', 'm', 'y', 'k', 'cyan', 'plum', 'darkgreen', 'd
 
 
 def plot_single_loss(log_folder, single=True, avg=False):
-    if log_folder != "./log/2018-11-07_19-37-16__v2_DEFAULT_CONFIG_LAMBDA_0.160000_0.400000_1.000000":
-        return
+
     loss_path = os.path.join(log_folder, 'loss.json')
     x, y = _retrieve_info(loss_path, single, avg=avg)
     if avg:
@@ -100,7 +99,6 @@ def plot_line_graph(x, y, title, x_label, y_label, save_name, log_dir, marker='*
 
     marker_every = max(int(len(x) / 10), 1)
     color_id = 1
-
     for item in y:
         ax, = plt.plot(x, item[0], color_list[color_id], label=item[1], marker=marker, markevery=marker_every,
                        markersize=6,
@@ -129,7 +127,7 @@ def plot_miou(log_folders, folder_type):
             legend_title = 'Lambda'
         elif folder_type == "epoch":
             params.append(config['TRAINING_EPOCHS'])
-            legend_title = 'Epoch'
+            legend_title = 'Training Epoch'
         elif folder_type == "lr":
             params.append(config['LEARNING_RATE'])
             legend_title = 'Learning Rate'
@@ -140,11 +138,25 @@ def plot_miou(log_folders, folder_type):
 
     plot_bar_chart(x, y, params,
                    title='MIOU',
-                   x_label='Experiments',
+                   x_label=legend_title,
                    y_label='MIOU',
-                   save_name='miou' + "_" + folder_type,
+                   save_name='miou' + "_bar_" + folder_type,
                    log_dir='./log',
                    legend_title=legend_title)
+
+    if legend_title == 'Lambda':
+        return
+    new_x, new_y = zip(*sorted(zip(params, y)))
+    new_x = list(new_x)
+    new_y = list(new_y)
+
+    plot_line_graph(new_x, [(new_y, legend_title)],
+                    title='MIOU',
+                    x_label=legend_title,
+                    y_label='loss',
+                    save_name='miou' + "_line_" + folder_type,
+                    log_dir='./log')
+
 
 
 def plot_bar_chart(x, y, params, title, x_label, y_label, save_name, log_dir, marker='*', legend_title=''):
@@ -231,6 +243,8 @@ def split_log_folders(log_folders):
         if 'DEFAULT_CONFIG_LAMBDA' in item:
             lf.append(item)
         elif 'DEFAULT_CONFIG_LR' in item:
+            if '2018-11-08_12-41-35__v2_DEFAULT_CONFIG_LR_0.000500' in item:
+                continue
             lrf.append(item)
         elif 'DEFAULT_CONFIG_EPOCH' in item:
             ef.append(item)
