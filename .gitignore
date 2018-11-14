@@ -151,6 +151,11 @@ data/*
 # Scrapy
 cars_images/
 
-/report/data/
+
 /report/log/2018-11-08_13-21-26_restore_nonaug/eval_compare/
 /report/log/2018-11-08_13-21-26_restore_nonaug/eval_img/
+/report/model/icnet_cityscapes_train_30k_bnnomerge.npy
+/report/model/icnet_cityscapes_train_30k.npy
+/report/model/icnet_cityscapes_trainval_90k_bnnomerge.npy
+/report/model/icnet_cityscapes_trainval_90k.npy
+/report/data/Kaggle/
