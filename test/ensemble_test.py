@@ -102,6 +102,7 @@ def main(model_log_dir, check_point, test_data_dir):
         n_input = input.astype(np.uint8)
         res2, tnet_mask = ternauNet(n_input, t_model)
 
+
         feed_dict = {ensemble_input: np.reshape(res2, [-1, ]),
                      net.img_placeholder: load_single_image(img_path=i, cfg=cfg)}
 
