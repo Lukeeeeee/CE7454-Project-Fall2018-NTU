@@ -5,32 +5,20 @@ CURRENT_PATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(CURRENT_PATH)
 PAR_PATH = os.path.abspath(os.path.join(CURRENT_PATH, os.pardir))
 sys.path.append(PAR_PATH)
-import argparse
 
-import tensorflow as tf
-from tqdm import trange
-from utils.image_reader import _image_mirroring, _random_crop_and_pad_image_and_labels, _image_scaling
-from utils.config import Config
 from utils.image_reader import ImageReader
 from src.model import ICNet, ICNet_BN
 import os
 from log import LOG_PATH
-import numpy as np
-from src.util import save_pred_to_image
 import argparse
 import tensorflow as tf
 import numpy as np
-import cv2
 import time
-from data import DATA_PATH
 import matplotlib.pyplot as plt
 from PIL import Image
 from tqdm import trange
 from utils.config import Config
-from test.TernausNet import Example
-import glob
 from data.tnet_offline_validation_set_res import TNET_LOG_PATH
-import torch
 
 # mapping different model
 model_config = {'train': ICNet, 'trainval': ICNet, 'train_bn': ICNet_BN, 'trainval_bn': ICNet_BN, 'others': ICNet_BN}
