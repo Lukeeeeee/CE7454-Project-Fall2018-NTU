@@ -5,32 +5,19 @@ CURRENT_PATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(CURRENT_PATH)
 PAR_PATH = os.path.abspath(os.path.join(CURRENT_PATH, os.pardir))
 sys.path.append(PAR_PATH)
-import argparse
-import tensorflow as tf
-from tqdm import trange
-from utils.image_reader import _image_mirroring, _random_crop_and_pad_image_and_labels, _image_scaling
-from utils.config import Config
-from utils.image_reader import ImageReader
 from src.model import ICNet, ICNet_BN
 import os
 from log import LOG_PATH
-import numpy as np
-from src.util import save_pred_to_image
 import argparse
 import tensorflow as tf
 import numpy as np
-import cv2
 import time
 from PIL import Image
-from data import DATA_PATH
-import matplotlib.pyplot as plt
-from test.TernausNet import Example
-from tqdm import trange
+# from test.TernausNet import Example
+from src.TernausNet.Example import get_model, ternauNet
 from utils.config import Config
 import glob
-from data.tnet_offline_validation_set_res import TNET_LOG_PATH
-import torch
-from test.submit import run_length_encode
+from src.submit import run_length_encode
 import pandas
 from inference import load_single_image, INFER_SIZE
 
@@ -104,8 +91,8 @@ def main(model_log_dir, check_point, test_data_dir):
     net.restore(cfg.model_paths[args.model])
     duration = 0
 
-    fig_list = glob.glob(test_data_dir + '*.jpg')
-    t_model = Example.get_model()
+    fig_list = glob.glob(test_data_dir + '*.jpg')[0:10]
+    t_model = get_model()
 
     for index, i in zip(range(len(fig_list)), fig_list):
         img = Image.open(i)
@@ -113,7 +100,7 @@ def main(model_log_dir, check_point, test_data_dir):
 
         input = np.squeeze(np.array(img, dtype=np.float32))
         n_input = input.astype(np.uint8)
-        res2, tnet_mask = Example.ternauNet(n_input, t_model)
+        res2, tnet_mask = ternauNet(n_input, t_model)
 
         feed_dict = {ensemble_input: np.reshape(res2, [-1, ]),
                      net.img_placeholder: load_single_image(img_path=i, cfg=cfg)}
@@ -129,7 +116,7 @@ def main(model_log_dir, check_point, test_data_dir):
         # icnet = np.array(np.reshape(icnet, cfg.param['eval_size']), dtype=np.uint8) * 255
         # icnet = Image.fromarray(icnet.astype(np.uint8))
         #
-        # fig, ax1 = plt.subplots(figsize=(10, 8))
+        # fig, ax1 = plt.subplots(figsize=(5, 3))
         #
         # plot1 = plt.subplot(141)
         # plot1.set_title("Original", fontsize=10)
@@ -150,13 +137,12 @@ def main(model_log_dir, check_point, test_data_dir):
         # plot2.set_title("Ensemble Result", fontsize=10)
         # plt.imshow(results, cmap='gray')
         # plt.axis('off')
-        #
         # plt.show()
 
         ensemble_result = np.squeeze(ensemble_result)
         en = run_length_encode(ensemble_result)
         if i.find('.jpg') != -1:
-            print('i is {}'.format(i))
+            print('{}/ {} i is {}'.format(index, len(fig_list), i))
             raw_data['img'].append(os.path.basename(i))
             raw_data['rle_mask'].append(en)
         else:
@@ -180,8 +166,8 @@ def main(model_log_dir, check_point, test_data_dir):
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
-    main(model_log_dir='2018-11-12_23-18-33_v2_restore_2018-11-09_21-00-37_random_mirror_10_extra_epoch',
-         check_point=9,
+    main(model_log_dir='2018-11-08_08-56-52__v2_DEFAULT_CONFIG_LR_0.000500',
+         check_point=19,
          test_data_dir='/home/dls/meng/DLProject/kaggle_carvana_segmentation/dataset/test/')

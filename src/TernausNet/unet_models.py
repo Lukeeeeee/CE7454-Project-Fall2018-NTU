@@ -97,9 +97,11 @@ def unet11(pretrained=False, **kwargs):
                 Kaggle: Carvana dataset https://www.kaggle.com/c/carvana-image-masking-challenge
     """
     model = UNet11(pretrained=pretrained, **kwargs)
+    from src.TernausNet import TNET_PATH
+    import os
 
     if pretrained == 'carvana':
-        state = torch.load('/home/dls/meng/DLProject/CE7454_Project_Fall2018_NTU/test/TernausNet/TernausNet.pt')
+        state = torch.load(os.path.join(TNET_PATH, 'TernausNet.pt'))
         model.load_state_dict(state['model'])
     return model
 
