@@ -91,7 +91,7 @@ def main(model_log_dir, check_point, test_data_dir):
     net.restore(cfg.model_paths[args.model])
     duration = 0
 
-    fig_list = glob.glob(test_data_dir + '*.jpg')[0:10]
+    fig_list = glob.glob(test_data_dir + '*.jpg')
     t_model = get_model()
 
     for index, i in zip(range(len(fig_list)), fig_list):
