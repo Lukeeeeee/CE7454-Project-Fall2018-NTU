@@ -4,7 +4,7 @@ CE7454 Project for Deep Learning for Data Science Fall 2018 NTU
 
 [![Binder](https://mybinder.org/badge.svg)][binder]
 
-[binder]: https://mybinder.org/v2/gh/Lukeeeeee/CE7454_Project_Fall2018_NTU/with_outputs?urlpath=tree
+[binder]: https://mybinder.org/v2/gh/Lukeeeeee/CE7454_Project_Fall2018_NTU/master
 
 ### Environment Set-up
 
