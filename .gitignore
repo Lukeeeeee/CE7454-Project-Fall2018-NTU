@@ -149,6 +149,5 @@ data/*
 /log/2018-11-04_14-42-15_/
 
 # Scrapy
-geckodriver.log
 cars_images/
 
