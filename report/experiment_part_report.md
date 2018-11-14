@@ -67,4 +67,79 @@ training from scratch manner.
 
 ![train flow compare](report_fig/??.jpg)
 
-The results show a huge performance improvement on using pre-trained model.
+The results show a huge performance improvement on using pre-trained model. This may be conducted by that deep learning 
+method always required long time of training and huge amount of training data when using a single model. Therefore,
+training from scratch show a very poor performance.
+
+### Use Tuned Hyper-parameter for training.
+After the previous training phase, we select the hyper-parameter that demonstrate the best result and combine them to 
+conduct one experiments. As the previous tuning results showed, we set the learning rate to ??, lambda to ??? and the 
+training epoch to ???. 
+After the training, the mIoU on validation set is degraded from xxx to xxx. 
+![tuned hyper parameter](fig/???)
+The reason of this is may caused by the fact
+that the different hyper-parameter may have a inter-influence between each other. We may conduct a more concise way to 
+do the hyper-parameter searching process, starting by the most important hyper-parameter, then the next one.
+
+### Data Augmentation 
+In the training dataset, we only have around 5,000 images, whereas in the test set, we have around 10,000 images. In 
+order to solve the limited train data, we adopted the data augmentation method in our experiments. We apply the random 
+mirroring method and random scaling method to the original dataset and conduct the following experiments.
+
+Instead of directly mixing the augmentation dataset into the original dataset, we use them in the way that, for instance, under the 
+setting of n training epochs, we use the original dataset in the first x training epoch, in the rest y epochs, we use 
+the augmentation dataset for training.
+
+Specifically, we conduct the following experiments:
+
+|              | Experiment 1 | Experiment 2 | Experiment 3 | 
+| :----------: | :----------: | :----------: | :----------: |
+| Stage 1      | Original 10 epoch| Original 10 epoch| Original 10 epoch|
+| State 2      | Random Mirror 10 epoch| Random Scale 10 epoch| Random Scale 5 epcoch|
+| State 3      |        |        |  Random Mirror 5 Epoch|
+
+And we get the following results:
+
+![data augmentation](fig/??)
+
+
+
+### Ensemble Method
+To further improve the performance, we use the most common ensemble method that is wildly used in Kaggle Competition. 
+To the best of our knowledge. the [TernausNet](https://arxiv.org/abs/1801.05746) is one of the state-of-art segmentation model that even specifically 
+designed for the Kaggle Carvana dataset. We use the naive ensemble method by comuting the weighted average of the 
+probability of labels given by two models' output, and use this as the final output.
+
+Let the a, b denote the weights and a + b = 1.0, let x denote the output probability on car label of IC-net and y denote
+the probability on car label of TernausNet. The ensemble output z = a * x + b * y. And if z > 0.5, the corresponding 
+pixel is predicted to be the car, otherwise is background.
+
+We ensemble the TernausNet with different models that are retrieved from our previous experiments results. 
+By trying different weight from (0.4, 0.6), (0.5, 0.5), and select the best one. 
+
+The following figure show the result of ensemble method:
+
+![ensemble one](fig/xxx)
+
+There is a very significant improvement as our expected. Moreover, we visualize some results to show this improvement.
+
+![ensemble result](fig/xxx)
+
+As we can see, after the synthesizing the results, the pixel on the location like the car tire can be clearly classified.
+
+### Inference Time
+Another important metric of segmentation algorithm is the processing time of the model. We compute the average inference
+time of the images in the validation set using the IC-net model, baseline K-means method and ensemble method.
+
+|IC net| K means | Ensemble |
+|:----:|:----:|:----:
+|0.0001 | 0.002| 0.003|
+
+### Test from Real World Data
+To further test the performance of our model and testing its generalization ability, we scrawl som images from the 
+Internet and the results are shown below:
+![scrawl image result](fig/xxx)
+
+As we can see, the performance is very poor under the real world data. This is attributed to the fact that our training
+dataset is very clean, and contains very little noise in the background. But in the real-world data, the background 
+could contain many different objects that are not shown in the training dataset.
