@@ -161,8 +161,5 @@ class Config(object):
             for i in dict:
                 model[i] = dict[i]
 
-            jsObj = json.dumps(model)
-
             with open(path, "w") as fw:
-                fw.write(jsObj)
-                fw.close()
+                json.dump(obj=model, fp=fw, indent=4, sort_keys=True)
