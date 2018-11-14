@@ -155,9 +155,12 @@ class Config(object):
             with open(path, 'w') as f:
                 json.dump(obj=dict, fp=f, indent=4, sort_keys=True)
         else:
-            fr = open(path)
-            model = json.load(fr)
-            fr.close()
+            if not os.path.isfile(path):
+                model = {}
+            else:
+                fr = open(path, 'r')
+                model = json.load(fr)
+                fr.close()
             for i in dict:
                 model[i] = dict[i]
 
