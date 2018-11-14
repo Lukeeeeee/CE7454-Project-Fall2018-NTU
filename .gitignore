@@ -151,3 +151,6 @@ data/*
 # Scrapy
 cars_images/
 
+/report/data/
+/report/log/2018-11-08_13-21-26_restore_nonaug/eval_compare/
+/report/log/2018-11-08_13-21-26_restore_nonaug/eval_img/
