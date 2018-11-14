@@ -35,9 +35,14 @@ and validation loss.
 
 The best training epoch is 200.
 
-And the following figure show the comparing of training loss and validation loss under different setting of epoch.
 
-![epoch_compare](report_fig/loss_val_single_avg.jpg)
+And the following figure show the comparing of training loss and validation loss under different settingof epoch 
+which can use to detect where over-fitting or under-fitting happens
+
+![epoch5](report_fig/epoch_5.jpg)
+![epoch40](report_fig/epoch_40.jpg)
+![epoch100](report_fig/epoch_100.jpg)
+![epoch200](report_fig/epoch_200.jpg)
  
 
 ### Modification on Loss Function
@@ -55,9 +60,9 @@ And we compare the performance of two different loss functions:
 
 ![loss compare](report_fig/loss_compare.jpg.jpg)
  
-The performance is degraded using modified loss, by referring the results we get from the data exploring process, this 
+The performance is a little bite degraded using modified loss, by referring the results we get from the data exploring process, this 
 maybe attribute to the dataset is quite clean, and the ratio of a car in the whole picture is quite balanced, so the 
-dice coefficent loss did not bring too much benefits, even degrade the performance.
+dice coefficent loss did not bring too much benefits.
 
 ### Train From Scratch or Using Pre-Trained Model
 In our training flow, we use the IC-net pre-trained model that was trained on cityscapes dataset. Using a pre-trained 
