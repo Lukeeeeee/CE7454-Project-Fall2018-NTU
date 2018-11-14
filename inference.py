@@ -60,8 +60,14 @@ def run_length_encode(mask):
     Returns run length as string formated
     '''
     inds = mask.flatten()
+    mask[0] = 0
+    mask[-1] = 0
     runs = np.where(inds[1:] != inds[:-1])[0] + 2
     runs[1::2] = runs[1::2] - runs[:-1:2]
+    if len(runs) % 2 != 0:
+        runs = list(runs)
+        runs.append(len(inds) - runs[-1])
+        assert runs[-1] <= len(inds)
     rle = ' '.join([str(r) for r in runs])
     return rle
 
