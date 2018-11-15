@@ -1,3 +1,5 @@
+from matplotlib import pyplot as plt
+from skimage import io
 import os
 import numpy as np
 import tensorflow as tf
@@ -199,3 +201,51 @@ class ImageReader(object):
             dataset = dataset.batch(1)
 
         return dataset
+
+
+def display():
+    sample_pic = '../data/valid+test/data/0ce66b539f52_03.jpg'
+    img = io.imread(sample_pic, as_gray=False, mode='RGB')
+
+    img_f = cv2.flip(img, 1)
+
+
+    scale = tf.random_uniform([1], minval=0.5, maxval=2.0, dtype=tf.float32, seed=None)
+    h_new = tf.to_int32(tf.multiply(tf.to_float(tf.shape(img)[0]), scale))
+    w_new = tf.to_int32(tf.multiply(tf.to_float(tf.shape(img)[1]), scale))
+    new_shape = tf.squeeze(tf.stack([h_new, w_new]), axis=[1])
+    img_b = tf.image.resize_images(img, new_shape)
+    with tf.Session():
+        scale_img = img_b.eval()
+    scale_img_np = np.array(scale_img, dtype=int)
+
+    fig, ax1 = plt.subplots(figsize=(20, 13))
+
+    plot1 = plt.subplot(221)
+    plot1.set_title("Original Image", fontsize=25)
+    plt.imshow(img)
+    plt.axis('off')
+
+    plot2 = plt.subplot(222)
+    plot2.set_title("Flipped Image", fontsize=25)
+    plt.imshow(img_f, cmap='gray')
+    plt.axis('off')
+
+    plot3 = plt.subplot(223)
+    plot3.set_title("Original Image", fontsize=25)
+    plt.imshow(img, cmap='gray')
+    plt.axis('off')
+
+    plot3 = plt.subplot(224)
+    plot3.set_title("Scaled Image", fontsize=25)
+    plt.imshow(scale_img_np, cmap='gray')
+    plt.axis('off')
+
+    plt.savefig('./tmp.jpg')
+    plt.show()
+
+
+
+
+if __name__ == "__main__":
+    display()
