@@ -94,4 +94,4 @@ dependencies:
   - torch==0.4.1
   - torchvision==0.2.1
   - scrapy==1.5.1
-
+  - scikit-image==0.14.1

@@ -1,10 +1,5 @@
-
-
-
-import numpy as np
 import cv2
-
-
+import numpy as np
 
 
 class Segment:
@@ -27,12 +22,14 @@ class Segment:
         component[label_image == label] = image[label_image == label]
         return component
 
+
 def get_stats(res, mask):
     overlap = res * mask  # Logical AND
     union = res + mask  # Logical OR
 
     IOU = overlap.sum() / float(union.sum())
     return IOU
+
 
 def extract_mask(image, mask):
     segment_num = 5
@@ -53,4 +50,3 @@ def extract_mask(image, mask):
             clabel = x
             best_layer = res_gray
     return best_layer
-

@@ -1,63 +1,32 @@
-import json
-import os
-import time
-
 import numpy as np
-
+import os
 from data import DATA_PATH
-from data.list import LIST_PATH
 from log import LOG_PATH
-from log.model import MODEL_PATH
+from data.list import LIST_PATH
+import time
+import json
 
-
+SRC_PATH=os.path.abspath('..')
+MODEL_PATH=os.path.abspath('../model')
 class Config(object):
     # Setting dataset directory
 
-    CITYSCAPES_DATA_DIR = os.path.join(DATA_PATH, 'cityscapes_dataset', 'cityscape')
-
-    ADE20K_DATA_DIR = os.path.join(DATA_PATH, 'ADEChallengeData2016')
+    
 
     Kaggle_DATA_DIR = os.path.join(DATA_PATH)
-
-    ADE20K_eval_list = os.path.join(DATA_PATH, 'list', 'ade20k_val_list.txt')
-    CITYSCAPES_eval_list = os.path.join(DATA_PATH, 'list', 'cityscapes_val_list.txt')
-
     Kaggle_eval_list = os.path.join(LIST_PATH, 'valid.txt')
-
-    ADE20K_train_list = os.path.join(DATA_PATH, 'list', 'ade20k_train_list.txt')
-    CITYSCAPES_train_list = os.path.join(DATA_PATH, 'list', 'cityscapes_train_list.txt')
-
     Kaggle_train_list = os.path.join(LIST_PATH, 'train.txt')
 
     # B G R order
     IMG_MEAN = np.array((177.682, 175.84, 174.21), dtype=np.float32)
 
-    ADE20k_param = {'name': 'ade20k',
-                    'num_classes': 150,  # predict: [0~149] corresponding to label [1~150], ignore class 0 (background)
-                    'ignore_label': 0,
-                    'eval_size': [480, 480],
-                    'eval_steps': 2000,
-                    'eval_list': ADE20K_eval_list,
-                    'train_list': ADE20K_train_list,
-                    'data_dir': ADE20K_DATA_DIR}
 
-    cityscapes_param = {'name': 'cityscapes',
-                        'num_classes': 19,
-                        'ignore_label': 255,
-                        'eval_size': [1025, 2049],
-                        'eval_steps': 500,
-                        'eval_list': CITYSCAPES_eval_list,
-                        'train_list': CITYSCAPES_train_list,
-                        'data_dir': CITYSCAPES_DATA_DIR}
-
-    model_paths = {'train': os.path.join(MODEL_PATH, 'cityscapes', 'icnet_cityscapes_train_30k.npy'),
-                   'trainval': os.path.join(MODEL_PATH, 'cityscapes', 'icnet_cityscapes_trainval_90k.npy'),
-                   'train_bn': os.path.join(MODEL_PATH, 'cityscapes', 'icnet_cityscapes_train_30k_bnnomerge.npy'),
-                   'trainval_bn': os.path.join(MODEL_PATH, 'cityscapes', 'icnet_cityscapes_trainval_90k_bnnomerge.npy'),
+    model_paths = {'train': os.path.join(MODEL_PATH, 'icnet_cityscapes_train_30k_bnnomerge.npy'),
+                   'trainval': os.path.join(MODEL_PATH,  'icnet_cityscapes_train_30k_bnnomerge.npy'),
+                   'train_bn': os.path.join(MODEL_PATH, 'icnet_cityscapes_train_30k_bnnomerge.npy'),
+                   'trainval_bn': os.path.join(MODEL_PATH,  'icnet_cityscapes_train_30k_bnnomerge.npy'),
                    'others': os.path.join(LOG_PATH, '2018-11-03_14-04-58/model.ckpt-4999'),
-                   'ade20k': os.path.join(LOG_PATH, 'ade20k', 'model.ckpt-27150')}
-    # assert os.path.isfile()
-
+                   }
     ## If you want to train on your own dataset, try to set these parameters.
     others_param = {'name': 'Kaggle',
                     'num_classes': 2,
@@ -72,6 +41,7 @@ class Config(object):
                     'data_dir': Kaggle_DATA_DIR}
 
     ## You can modify following lines to train different training configurations.
+
     TRAINING_SIZE = [720, 720]
 
     # previously 60001
@@ -86,7 +56,7 @@ class Config(object):
     WEIGHT_DECAY = 0.0001
 
     SAVE_NUM_IMAGES = 4
-    SAVE_PRED_EVERY = 1
+    SAVE_PRED_EVERY = 2
 
     # Loss Function = LAMBDA1 * sub4_loss + LAMBDA2 * sub24_loss + LAMBDA3 * sub124_loss
     LAMBDA1 = 0.16
@@ -94,7 +64,7 @@ class Config(object):
     LAMBDA3 = 1.0
 
     def __init__(self, dataset, is_training=False, filter_scale=1, random_scale=False, random_mirror=False,
-                 log_path_end='', eval_path_log=None, INFER_SIZE=None):
+                 log_path_end='', eval_path_log=None,INFER_SIZE=None):
         print('Setup configurations...')
         if eval_path_log:
             self.SNAPSHOT_DIR = eval_path_log
@@ -115,8 +85,7 @@ class Config(object):
         self.random_mirror = random_mirror
         self.is_training = is_training
         self.filter_scale = filter_scale
-        self.INFER_SIZE = INFER_SIZE
-
+        self.INFER_SIZE=INFER_SIZE
     def display(self):
         """Display Configuration values."""
         print("\nConfigurations:")
@@ -138,7 +107,7 @@ class Config(object):
                     log_config[k] = v
 
         print("\n")
-        self.save_to_json(dict=log_config, path=os.path.join(self.SNAPSHOT_DIR, 'config.json'), mode='eval')
+        self.save_to_json(dict=log_config, path=os.path.join(self.SNAPSHOT_DIR, 'config.json'),mode='eval')
 
     @staticmethod
     def load_json(file_path):
@@ -147,22 +116,22 @@ class Config(object):
             return res
 
     @staticmethod
-    def save_to_json(mode, dict, path, file_name=None):
+    def save_to_json(mode,dict, path, file_name=None):
         if file_name is not None:
             path = os.path.join(path, file_name)
-        if mode == 'eval':
+        if mode=='eval' or mode=='inference':
 
             with open(path, 'w') as f:
                 json.dump(obj=dict, fp=f, indent=4, sort_keys=True)
         else:
-            if not os.path.isfile(path):
-                model = {}
-            else:
-                fr = open(path, 'r')
-                model = json.load(fr)
-                fr.close()
+            fr = open(path)
+            model = json.load(fr)
+            fr.close()
             for i in dict:
                 model[i] = dict[i]
 
+            jsObj = json.dumps(model)
+
             with open(path, "w") as fw:
-                json.dump(obj=model, fp=fw, indent=4, sort_keys=True)
+                fw.write(jsObj)
+                fw.close()
