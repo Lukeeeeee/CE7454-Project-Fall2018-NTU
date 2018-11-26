@@ -42,7 +42,7 @@ The other trained models are avaliable in [here](https://entuedu-my.sharepoint.c
 --model_log_dir the trained model path
 --check_point check point of your model
 --mode inference in default
---img_path the single image you'd like to test on this trained model(submission should be false in this case)
+--img_path the single image you'd like to test on this trained model
+(submission should be false in this case)
 --submit true if you'd like to go through the whole kaggle dataset
-scrapy crawl cars
 ```
