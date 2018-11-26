@@ -1,4 +1,5 @@
 Tuning:
+
 | Learning Rate     | Lambda1-3   | Training Epoch |
 | :--------: |:-------------:| :-----:|
 | 0.05      | (0.16, 0.40, 1.0) | 200 |
