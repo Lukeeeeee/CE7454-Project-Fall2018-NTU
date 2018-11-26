@@ -35,3 +35,14 @@ The trained model by initializing weight with restored weights an with non-augme
 ) (you may try this as evaluation first):
 
 The other trained models are avaliable in [here](https://entuedu-my.sharepoint.com/:u:/g/personal/wei005_e_ntu_edu_sg/Eboz72eW3MBLuOywT7RQyJwBcbaYt5KclrNwe7DH-qg7Pw?e=iIqQH0)
+
+### Inference Stage
+
+```bash
+--model_log_dir the trained model path
+--check_point check point of your model
+--mode inference in default
+--img_path the single image you'd like to test on this trained model(submission should be false in this case)
+--submit true if you'd like to go through the whole kaggle dataset
+scrapy crawl cars
+```
