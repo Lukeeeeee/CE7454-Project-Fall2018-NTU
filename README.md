@@ -37,6 +37,7 @@ The trained model by initializing weight with restored weights an with non-augme
 The other trained models are avaliable in [here](https://entuedu-my.sharepoint.com/:u:/g/personal/wei005_e_ntu_edu_sg/Eboz72eW3MBLuOywT7RQyJwBcbaYt5KclrNwe7DH-qg7Pw?e=iIqQH0)
 
 ### Inference Stage
+Several params:
 
 ```bash
 --model_log_dir the trained model path
